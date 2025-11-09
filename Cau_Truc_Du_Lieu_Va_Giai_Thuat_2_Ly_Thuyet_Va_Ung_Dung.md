@@ -938,15 +938,399 @@ void detectArbitrage(int n) {
 **3. Financial Modeling:**
 - Tìm lợi nhuận tối đa trong giao dịch
 
-### 4.4. So sánh Dijkstra và Bellman-Ford
+### 4.4. Thuật giải Floyd-Warshall
 
-| Tiêu chí | Dijkstra | Bellman-Ford |
-|----------|----------|--------------|
-| Độ phức tạp | O((V+E) log V) | O(VE) |
-| Trọng số âm | Không | Có |
-| Chu trình âm | Không xử lý | Phát hiện được |
-| Tốc độ | Nhanh hơn | Chậm hơn |
-| Ứng dụng | GPS, routing | Arbitrage, optimization |
+**Lý thuyết:**
+- Tìm đường đi ngắn nhất giữa **tất cả các cặp đỉnh** (All-pairs shortest path)
+- Sử dụng Dynamic Programming
+- Xử lý được trọng số âm
+- Phát hiện chu trình âm
+- Độ phức tạp: O(V³)
+
+**Ý tưởng:**
+- Sử dụng ma trận kề để lưu khoảng cách
+- Xét từng đỉnh trung gian k (0 đến V-1)
+- Với mỗi cặp đỉnh (i, j), kiểm tra xem đi qua k có ngắn hơn không
+- Công thức: dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+
+**Thuật giải:**
+```cpp
+struct FloydWarshallResult {
+    vector<vector<int>> dist;
+    vector<vector<int>> next;  // Để truy vết đường đi
+    bool hasNegativeCycle;
+};
+
+FloydWarshallResult floydWarshall(int V, vector<vector<int>>& graph) {
+    const int INF = 1e9;
+    vector<vector<int>> dist = graph;
+    vector<vector<int>> next(V, vector<int>(V, -1));
+
+    // Khởi tạo next để truy vết
+    for (int i = 0; i < V; i++) {
+        for (int j = 0; j < V; j++) {
+            if (i != j && graph[i][j] != INF) {
+                next[i][j] = j;
+            }
+        }
+    }
+
+    // Floyd-Warshall
+    for (int k = 0; k < V; k++) {
+        for (int i = 0; i < V; i++) {
+            for (int j = 0; j < V; j++) {
+                if (dist[i][k] != INF && dist[k][j] != INF) {
+                    if (dist[i][k] + dist[k][j] < dist[i][j]) {
+                        dist[i][j] = dist[i][k] + dist[k][j];
+                        next[i][j] = next[i][k];
+                    }
+                }
+            }
+        }
+    }
+
+    // Kiểm tra chu trình âm
+    bool hasNegativeCycle = false;
+    for (int i = 0; i < V; i++) {
+        if (dist[i][i] < 0) {
+            hasNegativeCycle = true;
+            break;
+        }
+    }
+
+    return {dist, next, hasNegativeCycle};
+}
+```
+
+**Truy vết đường đi:**
+```cpp
+vector<int> reconstructPath(int u, int v, vector<vector<int>>& next) {
+    if (next[u][v] == -1) {
+        return {};  // Không có đường đi
+    }
+
+    vector<int> path = {u};
+    while (u != v) {
+        u = next[u][v];
+        path.push_back(u);
+    }
+
+    return path;
+}
+```
+
+**Ví dụ sử dụng:**
+```cpp
+int main() {
+    int V = 4;
+    const int INF = 1e9;
+
+    // Khởi tạo đồ thị
+    vector<vector<int>> graph(V, vector<int>(V, INF));
+
+    // Khoảng cách từ đỉnh đến chính nó = 0
+    for (int i = 0; i < V; i++)
+        graph[i][i] = 0;
+
+    // Thêm các cạnh
+    graph[0][1] = 5;
+    graph[0][3] = 10;
+    graph[1][2] = 3;
+    graph[2][3] = 1;
+
+    // Chạy Floyd-Warshall
+    auto result = floydWarshall(V, graph);
+
+    // In ma trận khoảng cách
+    cout << "Ma trận khoảng cách ngắn nhất:\n";
+    for (int i = 0; i < V; i++) {
+        for (int j = 0; j < V; j++) {
+            if (result.dist[i][j] == INF)
+                cout << "INF ";
+            else
+                cout << result.dist[i][j] << " ";
+        }
+        cout << endl;
+    }
+
+    // In đường đi từ 0 đến 3
+    auto path = reconstructPath(0, 3, result.next);
+    cout << "\nĐường đi từ 0 đến 3: ";
+    for (int v : path)
+        cout << v << " ";
+
+    return 0;
+}
+```
+
+**Ứng dụng thực tế:**
+
+**1. Tính khoảng cách giữa tất cả các cặp địa điểm:**
+```cpp
+// Ví dụ: Tính khoảng cách giữa tất cả các thành phố
+struct CityNetwork {
+    vector<string> cityNames;
+    vector<vector<int>> distances;
+
+    void findAllDistances() {
+        int n = cityNames.size();
+        auto result = floydWarshall(n, distances);
+
+        // In bảng khoảng cách
+        cout << "Khoảng cách giữa các thành phố:\n";
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                cout << cityNames[i] << " -> " << cityNames[j]
+                     << ": " << result.dist[i][j] << "km\n";
+            }
+        }
+    }
+
+    // Tìm thành phố trung tâm (tổng khoảng cách đến các thành phố khác nhỏ nhất)
+    int findCentralCity() {
+        int n = cityNames.size();
+        auto result = floydWarshall(n, distances);
+
+        int centralCity = 0;
+        int minTotalDist = INT_MAX;
+
+        for (int i = 0; i < n; i++) {
+            int totalDist = 0;
+            for (int j = 0; j < n; j++) {
+                totalDist += result.dist[i][j];
+            }
+
+            if (totalDist < minTotalDist) {
+                minTotalDist = totalDist;
+                centralCity = i;
+            }
+        }
+
+        return centralCity;
+    }
+};
+```
+
+**2. Network Routing - Tính toán bảng định tuyến:**
+```cpp
+// Tính bảng định tuyến cho mỗi router
+struct Router {
+    int id;
+    map<int, int> routingTable;  // destination -> next hop
+};
+
+vector<Router> buildRoutingTables(int V, vector<vector<int>>& network) {
+    auto result = floydWarshall(V, network);
+    vector<Router> routers(V);
+
+    for (int i = 0; i < V; i++) {
+        routers[i].id = i;
+        for (int j = 0; j < V; j++) {
+            if (i != j && result.next[i][j] != -1) {
+                routers[i].routingTable[j] = result.next[i][j];
+            }
+        }
+    }
+
+    return routers;
+}
+```
+
+**3. Game Development - Tính toán khoảng cách trên bản đồ:**
+```cpp
+// Pre-compute tất cả khoảng cách giữa các vị trí trên map
+class GameMap {
+private:
+    vector<vector<int>> allDistances;
+
+public:
+    void precomputeDistances(vector<vector<int>>& mapGraph) {
+        auto result = floydWarshall(mapGraph.size(), mapGraph);
+        allDistances = result.dist;
+    }
+
+    // Truy vấn nhanh O(1)
+    int getDistance(int from, int to) {
+        return allDistances[from][to];
+    }
+
+    // Tìm kẻ địch gần nhất
+    int findNearestEnemy(int playerPos, vector<int>& enemyPositions) {
+        int nearest = -1;
+        int minDist = INT_MAX;
+
+        for (int enemyPos : enemyPositions) {
+            int dist = allDistances[playerPos][enemyPos];
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = enemyPos;
+            }
+        }
+
+        return nearest;
+    }
+};
+```
+
+**4. Social Network Analysis:**
+```cpp
+// Tính "closeness centrality" - đo độ gần của một người với mọi người khác
+double calculateClosenessCentrality(int userId, vector<vector<int>>& socialGraph) {
+    int n = socialGraph.size();
+    auto result = floydWarshall(n, socialGraph);
+
+    double totalDistance = 0;
+    int reachableCount = 0;
+
+    for (int i = 0; i < n; i++) {
+        if (i != userId && result.dist[userId][i] != 1e9) {
+            totalDistance += result.dist[userId][i];
+            reachableCount++;
+        }
+    }
+
+    if (reachableCount == 0) return 0;
+
+    // Closeness = (n-1) / tổng khoảng cách
+    return (reachableCount) / totalDistance;
+}
+
+// Tìm người có ảnh hưởng nhất
+int findMostInfluentialPerson(vector<vector<int>>& socialGraph) {
+    int n = socialGraph.size();
+    int mostInfluential = 0;
+    double maxCloseness = 0;
+
+    for (int i = 0; i < n; i++) {
+        double closeness = calculateClosenessCentrality(i, socialGraph);
+        if (closeness > maxCloseness) {
+            maxCloseness = closeness;
+            mostInfluential = i;
+        }
+    }
+
+    return mostInfluential;
+}
+```
+
+**5. Transitive Closure - Kiểm tra khả năng đi được:**
+```cpp
+// Tìm tất cả các cặp đỉnh có đường đi
+vector<vector<bool>> findTransitiveClosure(int V, vector<vector<int>>& graph) {
+    auto result = floydWarshall(V, graph);
+    vector<vector<bool>> reachable(V, vector<bool>(V, false));
+
+    for (int i = 0; i < V; i++) {
+        for (int j = 0; j < V; j++) {
+            reachable[i][j] = (result.dist[i][j] != 1e9);
+        }
+    }
+
+    return reachable;
+}
+
+// Ứng dụng: Kiểm tra prerequisite courses
+bool canTakeCourse(int course, int student,
+                   vector<int>& completedCourses,
+                   vector<vector<bool>>& prerequisites) {
+    // Kiểm tra xem sinh viên đã học tất cả các môn tiên quyết chưa
+    for (int completed : completedCourses) {
+        if (prerequisites[completed][course]) {
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+**6. Finding Graph Center/Median:**
+```cpp
+// Tìm "center" của đồ thị - đỉnh có khoảng cách max đến các đỉnh khác là nhỏ nhất
+int findGraphCenter(int V, vector<vector<int>>& graph) {
+    auto result = floydWarshall(V, graph);
+
+    int center = 0;
+    int minMaxDist = INT_MAX;
+
+    for (int i = 0; i < V; i++) {
+        int maxDist = 0;
+        for (int j = 0; j < V; j++) {
+            if (result.dist[i][j] != 1e9) {
+                maxDist = max(maxDist, result.dist[i][j]);
+            }
+        }
+
+        if (maxDist < minMaxDist) {
+            minMaxDist = maxDist;
+            center = i;
+        }
+    }
+
+    return center;
+}
+
+// Ứng dụng: Đặt warehouse/data center ở vị trí tối ưu
+int findOptimalWarehouseLocation(vector<vector<int>>& cityDistances) {
+    return findGraphCenter(cityDistances.size(), cityDistances);
+}
+```
+
+**Ưu điểm:**
+- Tìm đường đi ngắn nhất giữa **tất cả** các cặp đỉnh
+- Code đơn giản, dễ hiểu
+- Xử lý được trọng số âm
+- Phù hợp khi cần query nhiều lần
+
+**Nhược điểm:**
+- Độ phức tạp O(V³) - chậm với đồ thị lớn
+- Tốn bộ nhớ O(V²)
+- Nếu chỉ cần từ 1 đỉnh nguồn, Dijkstra/Bellman-Ford hiệu quả hơn
+
+**Khi nào dùng Floyd-Warshall:**
+- Đồ thị nhỏ (V < 400)
+- Cần khoảng cách giữa **nhiều** cặp đỉnh
+- Cần pre-compute để query nhanh O(1)
+- Đồ thị dày đặc (nhiều cạnh)
+
+### 4.5. So sánh các thuật toán tìm đường đi ngắn nhất
+
+| Tiêu chí | Dijkstra | Bellman-Ford | Floyd-Warshall |
+|----------|----------|--------------|----------------|
+| Loại bài toán | Single-source | Single-source | All-pairs |
+| Độ phức tạp | O((V+E) log V) | O(VE) | O(V³) |
+| Bộ nhớ | O(V) | O(V) | O(V²) |
+| Trọng số âm | Không | Có | Có |
+| Chu trình âm | Không xử lý | Phát hiện được | Phát hiện được |
+| Cấu trúc DL | Priority Queue | Mảng | Ma trận |
+| Tốc độ | Nhanh nhất (1 nguồn) | Chậm | Chậm với V lớn |
+| Khi nào dùng | 1 nguồn, không âm | 1 nguồn, có âm | Nhiều cặp đỉnh |
+| Ứng dụng | GPS, routing | Arbitrage, tối ưu | Bảng định tuyến, Game |
+
+**Ví dụ lựa chọn thuật toán:**
+
+```cpp
+// Kịch bản 1: GPS Navigation - tìm đường từ A đến B
+// -> Dùng DIJKSTRA (1 nguồn, trọng số dương, nhanh nhất)
+auto dist = dijkstra(sourceCity, V, roadNetwork);
+
+// Kịch bản 2: Phát hiện arbitrage trong giao dịch tiền tệ
+// -> Dùng BELLMAN-FORD (có trọng số âm, cần phát hiện chu trình âm)
+auto result = bellmanFord(0, numCurrencies, exchangeRates);
+
+// Kịch bản 3: Tính bảng khoảng cách cho game map (100 vị trí)
+// -> Dùng FLOYD-WARSHALL (cần tất cả cặp, pre-compute, V nhỏ)
+auto allDists = floydWarshall(numLocations, gameMap);
+
+// Kịch bản 4: Tìm đường giữa 1000 thành phố (query nhiều lần)
+// -> Nếu V lớn: Chạy Dijkstra cho mỗi nguồn, cache kết quả
+// -> Nếu V nhỏ: Floyd-Warshall pre-compute
+if (V < 400) {
+    auto allDists = floydWarshall(V, graph);
+} else {
+    // Cache Dijkstra results cho các nguồn thường dùng
+    map<int, vector<int>> cachedResults;
+}
+```
 
 ---
 
@@ -1276,14 +1660,15 @@ vector<vector<int>> clusterUsingMST(int V, vector<Edge>& edges, int k) {
 
 **Độ phức tạp thuật toán đồ thị:**
 
-| Thuật toán | Độ phức tạp | Không gian |
-|-----------|-------------|------------|
-| BFS | O(V+E) | O(V) |
-| DFS | O(V+E) | O(V) |
-| Dijkstra | O((V+E) log V) | O(V) |
-| Bellman-Ford | O(VE) | O(V) |
-| Kruskal | O(E log E) | O(V) |
-| Prim | O((V+E) log V) | O(V) |
+| Thuật toán | Độ phức tạp | Không gian | Loại bài toán |
+|-----------|-------------|------------|---------------|
+| BFS | O(V+E) | O(V) | Duyệt, đường đi ngắn nhất (không trọng số) |
+| DFS | O(V+E) | O(V) | Duyệt, chu trình, topo sort |
+| Dijkstra | O((V+E) log V) | O(V) | Đường đi ngắn nhất 1 nguồn (không âm) |
+| Bellman-Ford | O(VE) | O(V) | Đường đi ngắn nhất 1 nguồn (có âm) |
+| Floyd-Warshall | O(V³) | O(V²) | Đường đi ngắn nhất tất cả cặp |
+| Kruskal | O(E log E) | O(V) | Cây khung nhỏ nhất (đồ thị thưa) |
+| Prim | O((V+E) log V) | O(V) | Cây khung nhỏ nhất (đồ thị dày) |
 
 ### 6.3. Khi nào dùng thuật toán nào?
 
