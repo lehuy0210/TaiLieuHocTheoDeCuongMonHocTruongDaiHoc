@@ -373,7 +373,20 @@ class Program
 
 ### 2.1. Tính đóng gói (Encapsulation)
 
-**Định nghĩa**: Che giấu thông tin bên trong object, chỉ cho phép truy cập qua các phương thức public.
+**Định nghĩa**:
+Tính đóng gói là cơ chế gói gọn dữ liệu (thuộc tính) và các phương thức xử lý dữ liệu đó vào bên trong một đơn vị duy nhất (class), đồng thời che giấu thông tin bên trong object và chỉ cho phép truy cập thông qua các phương thức public được định nghĩa sẵn.
+
+**Mục đích chính**:
+1. **Information Hiding (Che giấu thông tin)**: Ẩn các chi tiết cài đặt nội bộ
+2. **Data Protection (Bảo vệ dữ liệu)**: Ngăn chặn truy cập và thay đổi dữ liệu trái phép
+3. **Controlled Access (Kiểm soát truy cập)**: Chỉ cho phép thao tác với dữ liệu qua các phương thức được kiểm soát
+4. **Maintainability (Dễ bảo trì)**: Có thể thay đổi cài đặt bên trong mà không ảnh hưởng code bên ngoài
+
+**Nguyên tắc**:
+- Các thuộc tính (fields) nên được khai báo `private` hoặc `protected`
+- Cung cấp các phương thức `public` (getter/setter) để truy cập dữ liệu
+- Kiểm tra tính hợp lệ của dữ liệu trong setter
+- Chỉ public những gì thực sự cần thiết
 
 **Access Modifiers trong C++**:
 ```cpp
@@ -530,11 +543,241 @@ class Program
 }
 ```
 
+**Ví dụ về Getter/Setter với Validation**:
+
+**C++ - Sử dụng Getter/Setter**:
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+class SinhVien {
+private:
+    string maSV;
+    string hoTen;
+    int tuoi;
+    double diemTB;
+
+public:
+    // Constructor
+    SinhVien(string ma, string ten, int t, double diem) {
+        maSV = ma;
+        hoTen = ten;
+        setTuoi(t);      // Sử dụng setter để validate
+        setDiemTB(diem); // Sử dụng setter để validate
+    }
+
+    // Getter methods
+    string getMaSV() const { return maSV; }
+    string getHoTen() const { return hoTen; }
+    int getTuoi() const { return tuoi; }
+    double getDiemTB() const { return diemTB; }
+
+    // Setter với validation
+    void setTuoi(int t) {
+        if (t >= 18 && t <= 100) {
+            tuoi = t;
+        } else {
+            cout << "Tuoi khong hop le! Gan gia tri mac dinh 18." << endl;
+            tuoi = 18;
+        }
+    }
+
+    void setDiemTB(double diem) {
+        if (diem >= 0 && diem <= 10) {
+            diemTB = diem;
+        } else {
+            cout << "Diem khong hop le! Gan gia tri mac dinh 0." << endl;
+            diemTB = 0;
+        }
+    }
+
+    void hienThi() const {
+        cout << "Ma SV: " << maSV << endl;
+        cout << "Ho ten: " << hoTen << endl;
+        cout << "Tuoi: " << tuoi << endl;
+        cout << "Diem TB: " << diemTB << endl;
+    }
+};
+
+int main() {
+    SinhVien sv("SV001", "Nguyen Van A", 20, 8.5);
+    sv.hienThi();
+
+    // Thay đổi thông qua setter
+    sv.setTuoi(22);
+    sv.setDiemTB(9.0);
+
+    cout << "\nSau khi cap nhat:" << endl;
+    sv.hienThi();
+
+    // Thử set giá trị không hợp lệ
+    sv.setTuoi(200);    // Sẽ báo lỗi
+    sv.setDiemTB(15);   // Sẽ báo lỗi
+
+    return 0;
+}
+```
+
+**C# - Sử dụng Properties (Auto-Property và Full Property)**:
+```csharp
+using System;
+
+class SinhVien
+{
+    // Auto-implemented property (getter và setter tự động)
+    public string MaSV { get; set; }
+    public string HoTen { get; set; }
+
+    // Full property với validation
+    private int tuoi;
+    public int Tuoi
+    {
+        get { return tuoi; }
+        set
+        {
+            if (value >= 18 && value <= 100)
+                tuoi = value;
+            else
+            {
+                Console.WriteLine("Tuoi khong hop le! Gan gia tri mac dinh 18.");
+                tuoi = 18;
+            }
+        }
+    }
+
+    // Property với backing field và validation
+    private double diemTB;
+    public double DiemTB
+    {
+        get => diemTB;
+        set
+        {
+            if (value >= 0 && value <= 10)
+                diemTB = value;
+            else
+            {
+                Console.WriteLine("Diem khong hop le! Gan gia tri mac dinh 0.");
+                diemTB = 0;
+            }
+        }
+    }
+
+    // Read-only property
+    public string XepLoai
+    {
+        get
+        {
+            if (diemTB >= 8.5) return "Gioi";
+            if (diemTB >= 7.0) return "Kha";
+            if (diemTB >= 5.5) return "Trung binh";
+            return "Yeu";
+        }
+    }
+
+    // Constructor
+    public SinhVien(string ma, string ten, int t, double diem)
+    {
+        MaSV = ma;
+        HoTen = ten;
+        Tuoi = t;      // Sử dụng property để validate
+        DiemTB = diem; // Sử dụng property để validate
+    }
+
+    public void HienThi()
+    {
+        Console.WriteLine($"Ma SV: {MaSV}");
+        Console.WriteLine($"Ho ten: {HoTen}");
+        Console.WriteLine($"Tuoi: {Tuoi}");
+        Console.WriteLine($"Diem TB: {DiemTB}");
+        Console.WriteLine($"Xep loai: {XepLoai}");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        SinhVien sv = new SinhVien("SV001", "Nguyen Van A", 20, 8.5);
+        sv.HienThi();
+
+        Console.WriteLine("\nSau khi cap nhat:");
+        sv.Tuoi = 22;
+        sv.DiemTB = 9.0;
+        sv.HienThi();
+
+        // Thử set giá trị không hợp lệ
+        sv.Tuoi = 200;    // Sẽ báo lỗi
+        sv.DiemTB = 15;   // Sẽ báo lỗi
+    }
+}
+```
+
+**Ví dụ thực tế - Quản lý Email**:
+```csharp
+using System;
+using System.Text.RegularExpressions;
+
+class User
+{
+    private string email;
+
+    public string Email
+    {
+        get => email;
+        set
+        {
+            // Validate email format
+            string pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+            if (Regex.IsMatch(value, pattern))
+                email = value;
+            else
+                throw new ArgumentException("Email khong hop le!");
+        }
+    }
+
+    private string password;
+
+    // Write-only property (chỉ set, không get)
+    public string Password
+    {
+        set
+        {
+            if (value.Length >= 8)
+                password = HashPassword(value); // Mã hóa password
+            else
+                throw new ArgumentException("Password phai co it nhat 8 ky tu!");
+        }
+    }
+
+    private string HashPassword(string pwd)
+    {
+        // Simplified - trong thực tế dùng bcrypt, SHA256, etc.
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pwd));
+    }
+
+    public bool VerifyPassword(string inputPassword)
+    {
+        return HashPassword(inputPassword) == password;
+    }
+}
+```
+
 **Lợi ích**:
-- ✅ Bảo vệ dữ liệu khỏi truy cập trái phép
-- ✅ Kiểm soát cách dữ liệu được thay đổi
-- ✅ Dễ maintain và debug
-- ✅ Tăng tính bảo mật
+- ✅ **Bảo vệ dữ liệu**: Ngăn chặn truy cập trái phép và đảm bảo tính toàn vẹn dữ liệu
+- ✅ **Kiểm soát thay đổi**: Validate dữ liệu trước khi cập nhật
+- ✅ **Dễ maintain**: Thay đổi implementation mà không ảnh hưởng code bên ngoài
+- ✅ **Tăng bảo mật**: Ẩn các chi tiết nhạy cảm (password, số thẻ tín dụng, etc.)
+- ✅ **Flexibility**: Có thể thêm logic xử lý trong getter/setter sau này
+- ✅ **Debugging dễ dàng**: Có thể đặt breakpoint trong setter để track thay đổi
+
+**Best Practices**:
+1. ✅ Luôn khai báo fields là `private`
+2. ✅ Cung cấp getter/setter hoặc properties public khi cần
+3. ✅ Validate dữ liệu trong setter
+4. ✅ Sử dụng const/readonly cho dữ liệu không đổi
+5. ✅ Không trả về reference đến mutable object từ getter
+6. ✅ Sử dụng properties (C#) thay vì getter/setter methods
 
 ---
 
@@ -917,7 +1160,35 @@ class Program
 
 ### 2.4. Tính trừu tượng (Abstraction)
 
-**Định nghĩa**: Ẩn đi chi tiết implementation, chỉ hiển thị những gì cần thiết.
+**Định nghĩa**:
+Tính trừu tượng là quá trình ẩn đi các chi tiết cài đặt phức tạp và chỉ hiển thị những chức năng thiết yếu cho người dùng. Abstraction tập trung vào **"cái gì"** (what) hơn là **"như thế nào"** (how).
+
+**Mục đích chính**:
+1. **Simplification (Đơn giản hóa)**: Giảm độ phức tạp bằng cách ẩn chi tiết không cần thiết
+2. **Focus on Interface (Tập trung vào giao diện)**: Người dùng chỉ cần biết cách sử dụng, không cần biết cách hoạt động
+3. **Reduce Complexity (Giảm phức tạp)**: Chia hệ thống lớn thành các phần nhỏ dễ quản lý
+4. **Increase Flexibility (Tăng tính linh hoạt)**: Có thể thay đổi implementation mà không ảnh hưởng người dùng
+
+**Phân biệt Abstraction vs Encapsulation**:
+
+| Tiêu chí | Abstraction | Encapsulation |
+|----------|-------------|---------------|
+| **Mục đích** | Ẩn độ phức tạp | Che giấu dữ liệu |
+| **Tập trung** | Interface/Behavior | Data protection |
+| **Câu hỏi** | "Cái gì" được cung cấp? | "Làm sao" bảo vệ dữ liệu? |
+| **Cài đặt** | Abstract class, Interface | Access modifiers (private/protected) |
+| **Level** | Design level | Implementation level |
+| **Ví dụ** | Remote TV chỉ có nút bấm | Private fields + Public methods |
+
+**Ví dụ thực tế**:
+- 🚗 **Lái xe**: Bạn chỉ cần biết ga/phanh/vô lăng (abstraction), không cần biết động cơ hoạt động ra sao
+- 📱 **Smartphone**: Bạn chạm vào icon để mở app, không cần biết CPU xử lý như thế nào
+- ☕ **Máy pha cà phê**: Bạn nhấn nút, không cần biết cách nó pha
+
+**Cách thực hiện Abstraction**:
+1. **Abstract Classes**: Lớp có ít nhất một phương thức thuần ảo (pure virtual)
+2. **Interfaces**: Chỉ định nghĩa các method signature, không có implementation
+3. **Polymorphism**: Cùng interface, khác implementation
 
 **Ví dụ C++**:
 ```cpp
@@ -1099,11 +1370,332 @@ class Program
 }
 ```
 
+**Ví dụ về Interface - Payment System**:
+
+**C# - Interface Pattern**:
+```csharp
+using System;
+
+// Interface định nghĩa "contract"
+interface IPaymentMethod
+{
+    bool ProcessPayment(double amount);
+    bool RefundPayment(double amount);
+    string GetPaymentInfo();
+}
+
+// Implementation 1: Credit Card
+class CreditCardPayment : IPaymentMethod
+{
+    private string cardNumber;
+    private string cardHolder;
+
+    public CreditCardPayment(string number, string holder)
+    {
+        cardNumber = number;
+        cardHolder = holder;
+    }
+
+    public bool ProcessPayment(double amount)
+    {
+        Console.WriteLine($"Processing credit card payment: ${amount}");
+        Console.WriteLine($"Card: {MaskCardNumber()}");
+        // Logic xử lý thanh toán thẻ tín dụng
+        return true;
+    }
+
+    public bool RefundPayment(double amount)
+    {
+        Console.WriteLine($"Refunding ${amount} to credit card");
+        return true;
+    }
+
+    public string GetPaymentInfo()
+    {
+        return $"Credit Card ending in {cardNumber.Substring(cardNumber.Length - 4)}";
+    }
+
+    private string MaskCardNumber()
+    {
+        return "**** **** **** " + cardNumber.Substring(cardNumber.Length - 4);
+    }
+}
+
+// Implementation 2: PayPal
+class PayPalPayment : IPaymentMethod
+{
+    private string email;
+
+    public PayPalPayment(string email)
+    {
+        this.email = email;
+    }
+
+    public bool ProcessPayment(double amount)
+    {
+        Console.WriteLine($"Processing PayPal payment: ${amount}");
+        Console.WriteLine($"Account: {email}");
+        // Logic xử lý thanh toán PayPal
+        return true;
+    }
+
+    public bool RefundPayment(double amount)
+    {
+        Console.WriteLine($"Refunding ${amount} to PayPal account");
+        return true;
+    }
+
+    public string GetPaymentInfo()
+    {
+        return $"PayPal: {email}";
+    }
+}
+
+// Implementation 3: Bank Transfer
+class BankTransferPayment : IPaymentMethod
+{
+    private string accountNumber;
+    private string bankName;
+
+    public BankTransferPayment(string account, string bank)
+    {
+        accountNumber = account;
+        bankName = bank;
+    }
+
+    public bool ProcessPayment(double amount)
+    {
+        Console.WriteLine($"Processing bank transfer: ${amount}");
+        Console.WriteLine($"Bank: {bankName}");
+        Console.WriteLine($"Account: {accountNumber}");
+        return true;
+    }
+
+    public bool RefundPayment(double amount)
+    {
+        Console.WriteLine($"Refunding ${amount} via bank transfer");
+        return true;
+    }
+
+    public string GetPaymentInfo()
+    {
+        return $"Bank Transfer: {bankName} - {accountNumber}";
+    }
+}
+
+// Class sử dụng abstraction
+class PaymentProcessor
+{
+    public void ProcessOrder(IPaymentMethod paymentMethod, double amount)
+    {
+        Console.WriteLine($"\n=== Processing Order ===");
+        Console.WriteLine($"Amount: ${amount}");
+        Console.WriteLine($"Payment Method: {paymentMethod.GetPaymentInfo()}");
+
+        if (paymentMethod.ProcessPayment(amount))
+        {
+            Console.WriteLine("Payment successful!");
+        }
+        else
+        {
+            Console.WriteLine("Payment failed!");
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        PaymentProcessor processor = new PaymentProcessor();
+
+        // Sử dụng các payment method khác nhau
+        // Nhưng code xử lý giống nhau (abstraction)
+        IPaymentMethod creditCard = new CreditCardPayment("1234567890123456", "John Doe");
+        IPaymentMethod paypal = new PayPalPayment("john@example.com");
+        IPaymentMethod bankTransfer = new BankTransferPayment("9876543210", "Vietcombank");
+
+        processor.ProcessOrder(creditCard, 100.50);
+        processor.ProcessOrder(paypal, 75.25);
+        processor.ProcessOrder(bankTransfer, 200.00);
+    }
+}
+```
+
+**Ví dụ về Levels of Abstraction - Database Layer**:
+
+```csharp
+using System;
+using System.Collections.Generic;
+
+// Level 1: High-level abstraction (Interface)
+interface IDataRepository<T>
+{
+    void Add(T item);
+    T GetById(int id);
+    List<T> GetAll();
+    void Update(T item);
+    void Delete(int id);
+}
+
+// Level 2: Abstract implementation
+abstract class DatabaseRepository<T> : IDataRepository<T>
+{
+    protected string connectionString;
+
+    public DatabaseRepository(string connString)
+    {
+        connectionString = connString;
+    }
+
+    // Abstract methods - phải implement
+    public abstract void Add(T item);
+    public abstract T GetById(int id);
+    public abstract List<T> GetAll();
+    public abstract void Update(T item);
+    public abstract void Delete(int id);
+
+    // Concrete methods - có implementation
+    protected void LogOperation(string operation)
+    {
+        Console.WriteLine($"[{DateTime.Now}] Operation: {operation}");
+    }
+}
+
+// Level 3: Concrete implementation
+class SqlServerRepository<T> : DatabaseRepository<T>
+{
+    public SqlServerRepository(string connString) : base(connString) { }
+
+    public override void Add(T item)
+    {
+        LogOperation($"Adding {typeof(T).Name} to SQL Server");
+        // SQL Server specific implementation
+        Console.WriteLine($"INSERT INTO {typeof(T).Name} ...");
+    }
+
+    public override T GetById(int id)
+    {
+        LogOperation($"Getting {typeof(T).Name} by ID: {id}");
+        return default(T);
+    }
+
+    public override List<T> GetAll()
+    {
+        LogOperation($"Getting all {typeof(T).Name}");
+        return new List<T>();
+    }
+
+    public override void Update(T item)
+    {
+        LogOperation($"Updating {typeof(T).Name}");
+    }
+
+    public override void Delete(int id)
+    {
+        LogOperation($"Deleting {typeof(T).Name} ID: {id}");
+    }
+}
+
+class MongoDBRepository<T> : DatabaseRepository<T>
+{
+    public MongoDBRepository(string connString) : base(connString) { }
+
+    public override void Add(T item)
+    {
+        LogOperation($"Adding {typeof(T).Name} to MongoDB");
+        // MongoDB specific implementation
+        Console.WriteLine($"db.{typeof(T).Name}.insertOne(...)");
+    }
+
+    public override T GetById(int id)
+    {
+        LogOperation($"Getting {typeof(T).Name} by ID: {id}");
+        return default(T);
+    }
+
+    public override List<T> GetAll()
+    {
+        LogOperation($"Getting all {typeof(T).Name}");
+        return new List<T>();
+    }
+
+    public override void Update(T item)
+    {
+        LogOperation($"Updating {typeof(T).Name}");
+    }
+
+    public override void Delete(int id)
+    {
+        LogOperation($"Deleting {typeof(T).Name} ID: {id}");
+    }
+}
+
+// Business layer - chỉ biết đến interface
+class UserService
+{
+    private IDataRepository<string> repository;
+
+    public UserService(IDataRepository<string> repo)
+    {
+        repository = repo;
+    }
+
+    public void CreateUser(string user)
+    {
+        // Không quan tâm database nào được dùng
+        repository.Add(user);
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        // Có thể switch database mà không thay đổi business logic
+        IDataRepository<string> sqlRepo = new SqlServerRepository<string>("SqlConnection");
+        IDataRepository<string> mongoRepo = new MongoDBRepository<string>("MongoConnection");
+
+        UserService service1 = new UserService(sqlRepo);
+        service1.CreateUser("John Doe");
+
+        Console.WriteLine();
+
+        UserService service2 = new UserService(mongoRepo);
+        service2.CreateUser("Jane Smith");
+    }
+}
+```
+
 **Lợi ích**:
-- ✅ Giảm complexity
-- ✅ Tập trung vào chức năng chính
-- ✅ Dễ maintain
-- ✅ Tăng tính bảo mật
+- ✅ **Giảm complexity**: Người dùng không cần biết chi tiết cài đặt
+- ✅ **Tập trung vào chức năng**: Chỉ quan tâm đến "cái gì" chứ không phải "như thế nào"
+- ✅ **Dễ maintain**: Thay đổi implementation không ảnh hưởng client code
+- ✅ **Tăng tính bảo mật**: Ẩn các chi tiết nhạy cảm
+- ✅ **Reusability**: Interface có thể tái sử dụng cho nhiều implementation
+- ✅ **Testability**: Dễ dàng mock/stub cho unit testing
+- ✅ **Flexibility**: Dễ dàng thêm implementation mới
+
+**Best Practices**:
+1. ✅ Định nghĩa interface rõ ràng và tối giản
+2. ✅ Sử dụng abstract class khi cần chia sẻ code giữa các subclass
+3. ✅ Sử dụng interface khi chỉ cần định nghĩa contract
+4. ✅ Áp dụng "Program to an interface, not an implementation"
+5. ✅ Giữ interface ổn định, tránh thay đổi thường xuyên
+6. ✅ Sử dụng dependency injection để inject abstractions
+7. ✅ Tách biệt abstraction level (high-level vs low-level)
+
+**Khi nào dùng Abstract Class vs Interface**:
+
+**Abstract Class** khi:
+- Muốn chia sẻ code giữa các class liên quan
+- Có common behavior cần implement
+- Muốn định nghĩa non-public members
+
+**Interface** khi:
+- Muốn định nghĩa contract cho các class không liên quan
+- Cần multiple inheritance (C# không hỗ trợ multiple class inheritance)
+- Chỉ cần định nghĩa behavior, không cần implementation
 
 ---
 
