@@ -339,9 +339,296 @@ export class Guest extends User {
 }
 ```
 
-## 8.6. Practical Examples
+## 8.6. Use Cases Thực Tế
 
-### 8.6.1. Project Structure
+### Use Case 1: E-commerce Application Structure
+
+```javascript
+// utils/validation.js
+export function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export function validatePassword(password) {
+    return password.length >= 8;
+}
+
+// services/userService.js
+import { validateEmail, validatePassword } from '../utils/validation.js';
+
+const API_BASE = 'https://api.example.com';
+
+export async function registerUser(email, password) {
+    if (!validateEmail(email)) {
+        throw new Error('Invalid email');
+    }
+    if (!validatePassword(password)) {
+        throw new Error('Password too weak');
+    }
+
+    const response = await fetch(`${API_BASE}/users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    });
+
+    return response.json();
+}
+
+export async function loginUser(email, password) {
+    const response = await fetch(`${API_BASE}/users/login`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+    });
+    return response.json();
+}
+
+// models/Product.js
+export default class Product {
+    constructor(id, name, price, stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+
+    isAvailable() {
+        return this.stock > 0;
+    }
+
+    calculateDiscount(percentage) {
+        return this.price * (1 - percentage / 100);
+    }
+}
+
+// main.js
+import * as userService from './services/userService.js';
+import Product from './models/Product.js';
+
+async function appStart() {
+    try {
+        const user = await userService.loginUser('user@example.com', 'Pass123!');
+        console.log('User logged in:', user);
+
+        const product = new Product(1, 'Laptop', 1000, 5);
+        console.log('Product available:', product.isAvailable());
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+appStart();
+```
+
+### Use Case 2: Component Library with Barrel Exports
+
+```javascript
+// components/Button/Button.js
+export default class Button {
+    constructor(props) {
+        this.props = props;
+    }
+
+    render() {
+        return `<button>${this.props.label}</button>`;
+    }
+}
+
+// components/Button/index.js
+export { default } from './Button.js';
+
+// components/Input/Input.js
+export default class Input {
+    constructor(props) {
+        this.props = props;
+    }
+
+    render() {
+        return `<input placeholder="${this.props.placeholder}" />`;
+    }
+}
+
+// components/Input/index.js
+export { default } from './Input.js';
+
+// components/Form/Form.js
+export default class Form {
+    constructor(fields) {
+        this.fields = fields;
+    }
+
+    render() {
+        return `<form>${this.fields.map(f => f.render()).join('')}</form>`;
+    }
+}
+
+// components/Form/index.js
+export { default } from './Form.js';
+
+// components/index.js (Barrel export)
+export { default as Button } from './Button/index.js';
+export { default as Input } from './Input/index.js';
+export { default as Form } from './Form/index.js';
+
+// Usage
+import { Button, Input, Form } from './components/index.js';
+
+const button = new Button({ label: 'Submit' });
+const input = new Input({ placeholder: 'Name' });
+```
+
+### Use Case 3: Configuration Management
+
+```javascript
+// config/environment.js
+export const ENV = process.env.NODE_ENV || 'development';
+
+export const isProduction = ENV === 'production';
+export const isDevelopment = ENV === 'development';
+
+// config/api.js
+import { ENV } from './environment.js';
+
+export const API_CONFIG = {
+    development: {
+        baseURL: 'http://localhost:3000/api',
+        timeout: 10000
+    },
+    production: {
+        baseURL: 'https://api.example.com',
+        timeout: 5000
+    }
+};
+
+export function getAPIConfig() {
+    return API_CONFIG[ENV];
+}
+
+export const API_ENDPOINTS = {
+    users: '/users',
+    products: '/products',
+    orders: '/orders'
+};
+
+// config/index.js (Barrel export)
+export * from './environment.js';
+export * from './api.js';
+
+// Usage
+import { getAPIConfig, isDevelopment } from './config/index.js';
+
+const apiConfig = getAPIConfig();
+console.log('API Base:', apiConfig.baseURL);
+```
+
+### Use Case 4: Lazy Loading Features
+
+```javascript
+// features/dashboard.js
+export function renderDashboard() {
+    return '<div>Dashboard Content</div>';
+}
+
+export function initDashboard() {
+    console.log('Dashboard initialized');
+}
+
+// features/admin.js
+export function renderAdmin() {
+    return '<div>Admin Panel</div>';
+}
+
+export function initAdmin() {
+    console.log('Admin initialized');
+}
+
+// app.js
+async function loadFeature(name) {
+    try {
+        const module = await import(`./features/${name}.js`);
+        module.init();
+        return module;
+    } catch (error) {
+        console.error(`Failed to load ${name}:`, error);
+    }
+}
+
+async function handleNavigation(route) {
+    const module = await loadFeature(route);
+    const content = module[`render${route.charAt(0).toUpperCase() + route.slice(1)}`]?.();
+    document.getElementById('app').innerHTML = content;
+}
+
+// Usage
+button.addEventListener('click', () => handleNavigation('dashboard'));
+```
+
+### Use Case 5: Plugin System with Dynamic Imports
+
+```javascript
+// plugins/analytics.js
+export default class AnalyticsPlugin {
+    constructor(config) {
+        this.config = config;
+    }
+
+    track(event, data) {
+        console.log(`[Analytics] ${event}:`, data);
+    }
+
+    initialize() {
+        console.log('Analytics initialized');
+    }
+}
+
+// plugins/tracking.js
+export default class TrackingPlugin {
+    track(action) {
+        console.log(`[Tracking] ${action}`);
+    }
+
+    initialize() {
+        console.log('Tracking initialized');
+    }
+}
+
+// plugins/index.js
+export { default as Analytics } from './analytics.js';
+export { default as Tracking } from './tracking.js';
+
+// app.js
+import * as plugins from './plugins/index.js';
+
+class App {
+    constructor() {
+        this.plugins = [];
+    }
+
+    async loadPlugin(name, config) {
+        const PluginClass = plugins[name];
+        if (!PluginClass) {
+            throw new Error(`Plugin ${name} not found`);
+        }
+
+        const plugin = new PluginClass(config);
+        plugin.initialize();
+        this.plugins.push(plugin);
+        return plugin;
+    }
+
+    async init() {
+        await this.loadPlugin('Analytics', { apiKey: 'key123' });
+        await this.loadPlugin('Tracking', {});
+    }
+}
+
+const app = new App();
+app.init();
+```
+
+## 8.7. Practical Examples
+
+### 8.7.1. Project Structure
 
 ```
 src/
@@ -535,7 +822,154 @@ increment();
 console.log(count);  // 1 (live binding!)
 ```
 
-## 8.9. Best Practices
+## 8.8. Tips & Tricks
+
+### Tip 1: Namespace Imports for Large Modules
+
+```javascript
+// Bad: Too many individual imports
+import { action1, action2, action3, action4, action5 } from './actions.js';
+
+// Good: Use namespace
+import * as actions from './actions.js';
+
+// Or re-export as namespace
+// actions/index.js
+export * as default from './types.js';
+```
+
+### Tip 2: Conditional Dynamic Imports
+
+```javascript
+// Load different modules based on environment
+async function loadAuthModule() {
+    const authModule = process.env.NODE_ENV === 'production'
+        ? await import('./auth/prod.js')
+        : await import('./auth/dev.js');
+    return authModule;
+}
+```
+
+### Tip 3: Re-exporting with Renaming
+
+```javascript
+// oldAPI.js
+export function getData() { }
+export function postData() { }
+
+// newAPI.js - Re-export with different names
+export { getData as fetch, postData as send } from './oldAPI.js';
+
+// Usage
+import { fetch, send } from './newAPI.js';
+```
+
+### Tip 4: Default Exports for Main Classes
+
+```javascript
+// User.js
+export default class User {
+    constructor(name) {
+        this.name = name;
+    }
+}
+
+// Usage - Can import with any name
+import Person from './User.js';  // Still works!
+import Account from './User.js';  // Also works!
+```
+
+### Tip 5: Lazy Loading on Demand
+
+```javascript
+// Split code for routes
+const routes = {
+    dashboard: () => import('./pages/Dashboard.js'),
+    settings: () => import('./pages/Settings.js'),
+    profile: () => import('./pages/Profile.js')
+};
+
+async function navigate(route) {
+    const Page = await routes[route]();
+    return Page.default;  // Get default export
+}
+```
+
+### Tip 6: Checking if Module Export Exists
+
+```javascript
+// Check if optional feature is available
+async function loadOptionalFeature(name) {
+    try {
+        const module = await import(`./features/${name}.js`);
+        return module.default || module;
+    } catch (e) {
+        console.warn(`Feature ${name} not available`);
+        return null;
+    }
+}
+```
+
+### Tip 7: Circular Dependency Prevention
+
+```javascript
+// Instead of direct import in module A and B
+// Create a third module C that both import from
+
+// common.js
+export const config = {};
+
+// moduleA.js
+import { config } from './common.js';
+
+// moduleB.js
+import { config } from './common.js';
+// No circular dependency!
+```
+
+### Tip 8: Re-exporting Everything from a Module
+
+```javascript
+// index.js - Barrel export
+export * from './module1.js';
+export * from './module2.js';
+export { default as DefaultClass } from './main.js';
+
+// Can also use:
+export * as module1 from './module1.js';  // Namespace
+```
+
+### Tip 9: Side Effects Only Imports
+
+```javascript
+// polyfill.js
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
+
+// app.js - Just execute, no imports
+import './polyfill.js';  // Side effect only
+import './styles.css';   // Side effect only
+```
+
+### Tip 10: Mock Modules for Testing
+
+```javascript
+// math.js
+export function add(a, b) { return a + b; }
+
+// __mocks__/math.js
+export const add = jest.fn((a, b) => 0);
+
+// test.js
+jest.mock('./math.js');
+import { add } from './math.js';
+
+test('mocked', () => {
+    expect(add(1, 2)).toBe(0);
+});
+```
+
+## 8.9. Common Mistakes
 
 ### 8.9.1. One Export per Module (Default)
 
@@ -623,44 +1057,603 @@ import { b } from './b.js';
 ### 8.10.3. Importing Non-existent Export
 
 ```javascript
+// BAD: Export not defined
 // math.js
 export function add(a, b) { return a + b; }
 
 // main.js
-import { subtract } from './math.js';  // Error: subtract not exported
+import { subtract } from './math.js';  // Error
+
+// GOOD: Import what's exported
+import { add } from './math.js';
 ```
 
-## 8.11. Exercises
-
-### Exercise 1: Create Math Module
+### 8.10.4. Forgetting to Export
 
 ```javascript
-// Create math.js with add, subtract, multiply, divide
+// BAD: Defined but not exported
+// math.js
+function add(a, b) { return a + b; }
+
+// main.js
+import { add } from './math.js';  // Not found!
+
+// GOOD: Export it
+// math.js
+export function add(a, b) { return a + b; }
+```
+
+### 8.10.5. Default Export Confusion
+
+```javascript
+// BAD: Both default and named (confusing)
+export default function User() { }
+export { User };
+
+// GOOD: Pick one
+export default function User() { }
+```
+
+### 8.10.6: Side Effects in Top-level Code
+
+```javascript
+// BAD: Unexpected side effects on import
+// logger.js
+const log = console.log.bind(console);
+log('Logger loaded!');  // Prints on every import
+
+// GOOD: Explicit initialization
+// logger.js
+export function init() {
+    log('Logger loaded!');
+}
+```
+
+### 8.10.7: Not Using Path Aliases
+
+```javascript
+// BAD: Fragile relative paths
+import Button from '../../../components/Button.js';
+
+// GOOD: Use path aliases (with bundler)
+import Button from '@components/Button.js';
+```
+
+### 8.10.8: Importing Whole Module for One Function
+
+```javascript
+// BAD: Importing everything
+import * as math from './math.js';
+const result = math.add(1, 2);
+
+// GOOD: Import only needed
+import { add } from './math.js';
+const result = add(1, 2);
+```
+
+### 8.10.9: Async Import Without Handling
+
+```javascript
+// BAD: Ignoring promise
+import('./data.js');  // Promise not handled
+
+// GOOD: Handle the promise
+const data = await import('./data.js');
+
+// Or with .then()
+import('./data.js').then(module => {
+    // Use module
+}).catch(error => {
+    // Handle error
+});
+```
+
+### 8.10.10: Module Reload Misunderstandings
+
+```javascript
+// BAD: Expecting reload
+const m = await import('./data.js?t=' + Date.now());
+// This doesn't actually reload!
+
+// GOOD: Modules are singletons
+const m = await import('./data.js');
+// Same instance always returned
+```
+
+## 8.11. Troubleshooting Issues
+
+### Issue 1: Module Not Found Error
+
+**Problem:**
+```javascript
+import { api } from './api';  // ModuleNotFoundError
+```
+
+**Solution:**
+```javascript
+// Check 1: Add .js extension
+import { api } from './api.js';
+
+// Check 2: Correct path
+import { api } from '../services/api.js';
+
+// Check 3: File exists and exports it
+// api.js must have: export const api = ...
+```
+
+### Issue 2: Default vs Named Export Confusion
+
+**Problem:**
+```javascript
+// User.js
+export default class User { }
+
+// Bad import
+import { User } from './User.js';  // Error!
+```
+
+**Solution:**
+```javascript
+// Default import
+import User from './User.js';
+
+// Or export as named
+// User.js
+export class User { }
+
+// Import named
+import { User } from './User.js';
+```
+
+### Issue 3: Circular Dependencies
+
+**Problem:**
+```javascript
+// a.js
+import { b } from './b.js';
+export const a = 1;
+
+// b.js
+import { a } from './a.js';
+export const b = 2;
+```
+
+**Solution:**
+```javascript
+// Extract common module
+// common.js
+export const shared = {};
+
+// a.js & b.js import from common.js
+```
+
+### Issue 4: Dynamic Import Path Issues
+
+**Problem:**
+```javascript
+// Doesn't work - path must be literal
+const name = 'auth';
+const m = await import(`./modules/${name}`);
+```
+
+**Solution:**
+```javascript
+// Use full path in template
+const m = await import(`./modules/${name}.js`);
+
+// Or use module map
+const modules = {
+    auth: () => import('./auth.js')
+};
+const m = await modules[name]?.();
+```
+
+### Issue 5: Import Timing Issues
+
+**Problem:**
+```javascript
+// config.js might load before env.js
+import { apiKey } from './env.js';
+export const config = { apiKey };
+```
+
+**Solution:**
+```javascript
+// Lazy initialization
+export function getConfig() {
+    const { apiKey } = require('./env.js');
+    return { apiKey };
+}
+```
+
+### Issue 6: Side Effects Not Running
+
+**Problem:**
+```javascript
+// Unclear if CSS/polyfill applied
+import './styles.css';
+```
+
+**Solution:**
+```javascript
+// Make intent explicit
+import './styles.css';  // CSS side effect
+
+// Or in dedicated init file
+import './init.js';  // All polyfills & styles
+```
+
+### Issue 7: Modules Not Fully Initialized
+
+**Problem:**
+```javascript
+// Module might not be ready
+import { data } from './data.js';
+// data might be undefined
+```
+
+**Solution:**
+```javascript
+// Lazy loading with initialization
+export async function init() {
+    // Initialize data
+}
+
+export function getData() {
+    // Return initialized data
+}
+
+// main.js
+await dataModule.init();
+const data = dataModule.getData();
+```
+
+### Issue 8: Import JSON Files
+
+**Problem:**
+```javascript
+// Works in Webpack, not standard
+import data from './data.json';
+```
+
+**Solution:**
+```javascript
+// Standard fetch approach
+const response = await fetch('./data.json');
+const data = await response.json();
+
+// Or newer JSON import
+import data from './data.json' assert { type: 'json' };
+```
+
+### Issue 9: Tree Shaking Not Working
+
+**Problem:**
+```javascript
+// import * prevents tree shaking
+import * as utils from './utils.js';
+utils.used();
+```
+
+**Solution:**
+```javascript
+// Named imports enable tree shaking
+import { used } from './utils.js';
+used();
+```
+
+### Issue 10: Missing Default Export
+
+**Problem:**
+```javascript
+// No default export but trying to use
+// index.js
+export { Button } from './Button.js';
+
+// Usage
+import Components from './index.js';  // undefined
+```
+
+**Solution:**
+```javascript
+// Provide default export
+export { default } from './Button.js';
+
+// Or use named imports
+import { Button } from './index.js';
+```
+
+## 8.12. Advanced Topics
+
+### Topic 1: Module Federation
+
+```javascript
+// Shared module registry for micro frontends
+// registry.js
+export const modules = new Map();
+
+export function register(name, module) {
+    modules.set(name, module);
+}
+
+export function get(name) {
+    return modules.get(name);
+}
+
+// app1.js
+import { register } from './registry.js';
+import Dashboard from './Dashboard.js';
+register('dashboard', Dashboard);
+
+// app2.js - Use shared module
+import { get } from './registry.js';
+const Dashboard = get('dashboard');
+```
+
+### Topic 2: Import Maps
+
+```javascript
+/*
+<script type="importmap">
+{
+  "imports": {
+    "lodash": "https://cdn.jsdelivr.net/npm/lodash-es",
+    "utils/": "./src/utils/",
+    "components/": "./src/components/"
+  }
+}
+</script>
+*/
+
+// Can use short paths
+import { debounce } from 'lodash';
+import { formatDate } from 'utils/format.js';
+```
+
+### Topic 3: Virtual Modules
+
+```javascript
+class ModuleLoader {
+    #modules = new Map();
+
+    register(name, factory) {
+        this.#modules.set(name, factory);
+    }
+
+    async load(name) {
+        const factory = this.#modules.get(name);
+        if (!factory) throw new Error(`Not found: ${name}`);
+        return factory();
+    }
+}
+
+const loader = new ModuleLoader();
+loader.register('config', () => ({
+    default: { apiUrl: 'https://api.example.com' }
+}));
+
+const config = await loader.load('config');
+```
+
+### Topic 4: Module Caching
+
+```javascript
+class ModuleCache {
+    #cache = new Map();
+    #pending = new Map();
+
+    async load(path) {
+        if (this.#cache.has(path)) {
+            return this.#cache.get(path);
+        }
+
+        if (this.#pending.has(path)) {
+            return this.#pending.get(path);
+        }
+
+        const promise = import(path);
+        this.#pending.set(path, promise);
+
+        try {
+            const module = await promise;
+            this.#cache.set(path, module);
+            return module;
+        } finally {
+            this.#pending.delete(path);
+        }
+    }
+
+    invalidate(path) {
+        this.#cache.delete(path);
+    }
+
+    clear() {
+        this.#cache.clear();
+    }
+}
+```
+
+### Topic 5: Lazy Component Loading
+
+```javascript
+class LazyComponent {
+    #module = null;
+
+    async load() {
+        if (!this.#module) {
+            this.#module = await import('./heavy.js');
+        }
+        return this.#module;
+    }
+
+    async render() {
+        const { render } = await this.load();
+        return render();
+    }
+
+    async hydrate(element) {
+        const { hydrate } = await this.load();
+        hydrate(element);
+    }
+}
+
+// Usage
+const component = new LazyComponent();
+const html = await component.render();  // Load on demand
+```
+
+## 8.13. Exercises
+
+### Exercise 1 (Dễ): Math Module
+
+```javascript
+// Create math.js with:
+// - add(a, b)
+// - subtract(a, b)
+// - multiply(a, b)
+// - divide(a, b)
 // Use named exports
-// Import and use in main.js
+
+// Create main.js that imports and uses them
 ```
 
-### Exercise 2: User Service
+### Exercise 2 (Dễ): User Module
 
 ```javascript
-// Create userService.js with:
+// Create User.js with default export class
+// Create userService.js with named exports:
 // - getUsers()
 // - getUser(id)
 // - createUser(data)
-// Export as default object
+
+// Create main.js that imports both
 ```
 
-### Exercise 3: Dynamic Import
+### Exercise 3 (Dễ): Barrel Export
 
 ```javascript
-// Create a function that dynamically imports a module based on input
-async function loadModule(name) {
-    // Your code
-}
+// Create components directory:
+// - Button.js (export Button)
+// - Input.js (export Input)
+// - Form.js (export Form)
+
+// Create index.js re-exporting all
+// Test importing from components/
+```
+
+### Exercise 4 (Dễ): Config Module
+
+```javascript
+// Create config.js with:
+// - API_URL constant
+// - TIMEOUT constant
+// - getConfig() function
+
+// Create main.js that uses it
+```
+
+### Exercise 5 (Trung bình): API Service Module
+
+```javascript
+// Create apiService.js:
+// - get(url)
+// - post(url, data)
+// - put(url, data)
+// - delete(url)
+
+// Create userService.js using apiService
+// - getUsers()
+// - createUser(data)
+```
+
+### Exercise 6 (Trung bình): Plugin System
+
+```javascript
+// Create plugin base class
+// Create 2-3 plugins
+// Create pluginManager that:
+// - loads plugins
+// - initializes them
+// - executes methods
+
+// Create main.js to test
+```
+
+### Exercise 7 (Trung bình): Route-based Code Splitting
+
+```javascript
+// Create pages: Dashboard, Settings, Profile
+// Create router that:
+// - Takes route name
+// - Dynamically imports page
+// - Returns component
+
+// Test all routes loading
+```
+
+### Exercise 8 (Trung bình): Feature Flags Module
+
+```javascript
+// Create feature flags module:
+// - Toggle features on/off
+// - Conditionally import features
+
+// Create main.js that:
+// - Enables/disables features
+// - Loads appropriate modules
+```
+
+### Exercise 9 (Khó): Dependency Resolver
+
+```javascript
+// Create system that:
+// - Tracks dependencies
+// - Loads in correct order
+// - Detects circular deps
+// - Provides metadata
+
+// Test with sample modules
+```
+
+### Exercise 10 (Khó): State Management System
+
+```javascript
+// Create store module:
+// - State management
+// - Actions as modules
+// - Reducers as modules
+// - Middleware support
+
+// Create app.js integrating everything
+```
+
+### Exercise 11 (Khó): Module Analysis Tool
+
+```javascript
+// Create tool that:
+// - Analyzes all imports
+// - Builds dependency graph
+// - Detects circular deps
+// - Reports unused modules
+// - Suggests optimizations
+
+// Run on project files
+```
+
+### Exercise 12 (Khó): Hot Module Replacement
+
+```javascript
+// Create HMR system that:
+// - Detects changes
+// - Reloads modules
+// - Maintains state
+// - Notifies subscribers
+
+// Test with sample modules
 ```
 
 ---
 
-**Kết luận:** ES6 Modules giúp organize code tốt hơn, tránh global scope pollution, và hỗ trợ tree-shaking. Sử dụng named exports cho utilities và default export cho main class/component.
+**Kết luận:** ES6 Modules là nền tảng của code organization hiện đại. Sử dụng default exports cho main classes, named exports cho utilities. Tránh circular dependencies. Dùng dynamic imports cho code splitting.
 
-**Chương tiếp theo:** Default Parameters
+**Chương tiếp theo:** Promise & Async/Await
