@@ -691,7 +691,566 @@ int main() {
 }
 ```
 
-### 3.7 Con trỏ và mảng
+### 3.7 Cấp phát động (Dynamic Allocation)
+
+#### 3.7.1 Giới thiệu cấp phát động
+
+**Khái niệm:**
+- Cấp phát động là việc cấp phát bộ nhớ trong thời gian chạy chương trình (runtime)
+- Khác với cấp phát tĩnh (khai báo mảng với kích thước cố định), cấp phát động cho phép xác định kích thước bộ nhớ khi chương trình đang chạy
+- Bộ nhớ được cấp phát từ vùng nhớ Heap
+
+**So sánh cấp phát tĩnh và động:**
+
+| Tiêu chí | Cấp phát tĩnh | Cấp phát động |
+|----------|---------------|---------------|
+| Kích thước | Cố định tại compile-time | Linh hoạt tại runtime |
+| Vùng nhớ | Stack | Heap |
+| Tốc độ | Nhanh hơn | Chậm hơn một chút |
+| Quản lý | Tự động giải phóng | Phải giải phóng thủ công |
+| Giới hạn | Kích thước stack giới hạn | Kích thước heap lớn hơn |
+
+#### 3.7.2 Cấp phát động mảng 1 chiều
+
+**Cú pháp:**
+```cpp
+// Cấp phát
+<kiểu_dữ_liệu>* <tên_con_trỏ> = new <kiểu_dữ_liệu>[kích_thước];
+
+// Giải phóng
+delete[] <tên_con_trỏ>;
+```
+
+**Ví dụ cơ bản:**
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int n;
+    cout << "Nhap so phan tu: ";
+    cin >> n;
+
+    // Cấp phát mảng động
+    int* arr = new int[n];
+
+    // Nhập dữ liệu
+    cout << "Nhap cac phan tu:\n";
+    for (int i = 0; i < n; i++) {
+        cout << "arr[" << i << "] = ";
+        cin >> arr[i];
+    }
+
+    // Xuất dữ liệu
+    cout << "Mang vua nhap: ";
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+
+    // Giải phóng bộ nhớ
+    delete[] arr;
+    arr = nullptr;  // Tốt nhất nên gán nullptr sau khi delete
+
+    return 0;
+}
+```
+
+**Ví dụ nâng cao - Quản lý danh sách sinh viên:**
+```cpp
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+struct SinhVien {
+    char maSV[10];
+    char hoTen[50];
+    float diemTB;
+};
+
+void nhapDanhSach(SinhVien* ds, int n) {
+    for (int i = 0; i < n; i++) {
+        cout << "\nNhap sinh vien thu " << i + 1 << ":\n";
+        cout << "Ma SV: ";
+        cin >> ds[i].maSV;
+        cin.ignore();
+        cout << "Ho ten: ";
+        cin.getline(ds[i].hoTen, 50);
+        cout << "Diem TB: ";
+        cin >> ds[i].diemTB;
+    }
+}
+
+void xuatDanhSach(SinhVien* ds, int n) {
+    cout << "\n--- DANH SACH SINH VIEN ---\n";
+    for (int i = 0; i < n; i++) {
+        cout << ds[i].maSV << " - " << ds[i].hoTen
+             << " - " << ds[i].diemTB << endl;
+    }
+}
+
+int main() {
+    int n;
+    cout << "Nhap so luong sinh vien: ";
+    cin >> n;
+
+    // Cấp phát động cho mảng struct
+    SinhVien* danhSach = new SinhVien[n];
+
+    nhapDanhSach(danhSach, n);
+    xuatDanhSach(danhSach, n);
+
+    // Giải phóng bộ nhớ
+    delete[] danhSach;
+    danhSach = nullptr;
+
+    return 0;
+}
+```
+
+#### 3.7.3 Cấp phát động mảng nhiều chiều
+
+**A. Cấp phát mảng 2 chiều - Cách 1: Sử dụng con trỏ cấp 2**
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int m, n;
+    cout << "Nhap so hang: ";
+    cin >> m;
+    cout << "Nhap so cot: ";
+    cin >> n;
+
+    // Cấp phát mảng 2 chiều
+    int** matrix = new int*[m];  // Cấp phát m con trỏ
+    for (int i = 0; i < m; i++) {
+        matrix[i] = new int[n];  // Mỗi con trỏ trỏ đến 1 mảng n phần tử
+    }
+
+    // Nhập dữ liệu
+    cout << "Nhap cac phan tu:\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << "matrix[" << i << "][" << j << "] = ";
+            cin >> matrix[i][j];
+        }
+    }
+
+    // Xuất dữ liệu
+    cout << "\nMa tran:\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << matrix[i][j] << "\t";
+        }
+        cout << "\n";
+    }
+
+    // Giải phóng bộ nhớ
+    for (int i = 0; i < m; i++) {
+        delete[] matrix[i];  // Giải phóng từng hàng
+    }
+    delete[] matrix;  // Giải phóng mảng con trỏ
+    matrix = nullptr;
+
+    return 0;
+}
+```
+
+**B. Cấp phát mảng 2 chiều - Cách 2: Sử dụng mảng 1 chiều**
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int m, n;
+    cout << "Nhap so hang va cot: ";
+    cin >> m >> n;
+
+    // Cấp phát mảng 1 chiều, truy xuất như mảng 2 chiều
+    int* matrix = new int[m * n];
+
+    // Nhập dữ liệu
+    cout << "Nhap cac phan tu:\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << "matrix[" << i << "][" << j << "] = ";
+            cin >> matrix[i * n + j];  // Công thức: [i][j] = i * n + j
+        }
+    }
+
+    // Xuất dữ liệu
+    cout << "\nMa tran:\n";
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << matrix[i * n + j] << "\t";
+        }
+        cout << "\n";
+    }
+
+    // Giải phóng bộ nhớ (đơn giản hơn)
+    delete[] matrix;
+    matrix = nullptr;
+
+    return 0;
+}
+```
+
+**C. Cấp phát mảng 3 chiều**
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int x, y, z;
+    cout << "Nhap kich thuoc (x y z): ";
+    cin >> x >> y >> z;
+
+    // Cấp phát mảng 3 chiều
+    int*** arr3D = new int**[x];
+    for (int i = 0; i < x; i++) {
+        arr3D[i] = new int*[y];
+        for (int j = 0; j < y; j++) {
+            arr3D[i][j] = new int[z];
+        }
+    }
+
+    // Gán giá trị
+    int value = 0;
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            for (int k = 0; k < z; k++) {
+                arr3D[i][j][k] = value++;
+            }
+        }
+    }
+
+    // In một số giá trị
+    cout << "arr3D[0][0][0] = " << arr3D[0][0][0] << endl;
+    cout << "arr3D[1][1][1] = " << arr3D[1][1][1] << endl;
+
+    // Giải phóng bộ nhớ
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            delete[] arr3D[i][j];
+        }
+        delete[] arr3D[i];
+    }
+    delete[] arr3D;
+    arr3D = nullptr;
+
+    return 0;
+}
+```
+
+#### 3.7.4 Lợi ích của cấp phát động
+
+**1. Tiết kiệm bộ nhớ:**
+```cpp
+// Không hiệu quả - cấp phát tĩnh
+int arr[10000];  // Luôn chiếm 40KB ngay cả khi chỉ dùng 10 phần tử
+
+// Hiệu quả - cấp phát động
+int n;
+cin >> n;  // Giả sử n = 10
+int* arr = new int[n];  // Chỉ chiếm 40 bytes
+```
+
+**2. Linh hoạt về kích thước:**
+```cpp
+// Có thể thay đổi kích thước trong quá trình chạy
+int n;
+cout << "Ban muon nhap bao nhieu so? ";
+cin >> n;
+int* numbers = new int[n];  // Kích thước phụ thuộc vào input người dùng
+```
+
+**3. Vượt qua giới hạn Stack:**
+```cpp
+// Stack có giới hạn (thường ~1-8MB)
+// int bigArray[10000000];  // Có thể gây stack overflow!
+
+// Heap có kích thước lớn hơn nhiều
+int* bigArray = new int[10000000];  // OK - dùng heap
+```
+
+**4. Trả về mảng từ hàm:**
+```cpp
+int* createArray(int n) {
+    // Mảng cục bộ sẽ bị hủy khi thoát hàm
+    // int arr[100];  // KHÔNG được!
+
+    // Mảng động vẫn tồn tại sau khi thoát hàm
+    int* arr = new int[n];  // OK
+    for (int i = 0; i < n; i++) {
+        arr[i] = i * 10;
+    }
+    return arr;  // Trả về con trỏ
+}
+
+int main() {
+    int* myArray = createArray(5);
+    // Sử dụng myArray...
+    delete[] myArray;  // Nhớ giải phóng
+    return 0;
+}
+```
+
+**5. Tạo cấu trúc dữ liệu phức tạp:**
+```cpp
+// Danh sách liên kết (Linked List)
+struct Node {
+    int data;
+    Node* next;
+};
+
+Node* createNode(int value) {
+    Node* newNode = new Node;
+    newNode->data = value;
+    newNode->next = nullptr;
+    return newNode;
+}
+
+// Cây nhị phân (Binary Tree)
+struct TreeNode {
+    int data;
+    TreeNode* left;
+    TreeNode* right;
+};
+
+TreeNode* createTreeNode(int value) {
+    TreeNode* node = new TreeNode;
+    node->data = value;
+    node->left = nullptr;
+    node->right = nullptr;
+    return node;
+}
+```
+
+#### 3.7.5 Khi nào nên sử dụng cấp phát động
+
+**NÊN sử dụng cấp phát động khi:**
+
+1. **Không biết kích thước trước:**
+```cpp
+// Ví dụ: Đọc dữ liệu từ file hoặc từ người dùng
+int n;
+cout << "Nhap so luong phan tu: ";
+cin >> n;
+int* arr = new int[n];
+```
+
+2. **Kích thước lớn (có thể vượt quá stack):**
+```cpp
+// Mảng rất lớn
+int* bigData = new int[1000000];  // 4MB - phù hợp dùng heap
+```
+
+3. **Cần dữ liệu tồn tại ngoài phạm vi hàm:**
+```cpp
+int* getData() {
+    int* result = new int[100];
+    // Xử lý dữ liệu...
+    return result;  // OK - dữ liệu vẫn tồn tại
+}
+```
+
+4. **Tạo cấu trúc dữ liệu động:**
+```cpp
+// Linked list, tree, graph, etc.
+struct Node {
+    int data;
+    Node* next;
+};
+
+Node* head = new Node;  // Tạo node đầu tiên
+```
+
+5. **Quản lý tài nguyên hiệu quả:**
+```cpp
+// Chỉ cấp phát khi cần, giải phóng khi không dùng
+if (needProcessing) {
+    int* tempData = new int[10000];
+    // Xử lý...
+    delete[] tempData;  // Giải phóng ngay
+}
+```
+
+**KHÔNG NÊN sử dụng cấp phát động khi:**
+
+1. **Kích thước nhỏ và cố định:**
+```cpp
+// Tốt hơn dùng mảng tĩnh
+int small[10];  // Tốt hơn
+// int* small = new int[10];  // Không cần thiết
+```
+
+2. **Dữ liệu tạm trong hàm:**
+```cpp
+void processData() {
+    int temp[100];  // OK - tự động giải phóng khi thoát hàm
+    // Không cần: int* temp = new int[100];
+}
+```
+
+3. **Không muốn quản lý bộ nhớ thủ công:**
+```cpp
+// Nếu có thể, dùng vector (C++ STL)
+#include <vector>
+vector<int> arr(n);  // Tự động quản lý bộ nhớ, an toàn hơn
+```
+
+#### 3.7.6 Lưu ý quan trọng khi sử dụng cấp phát động
+
+**1. Luôn kiểm tra cấp phát thành công:**
+```cpp
+int* arr = new(nothrow) int[n];
+if (arr == nullptr) {
+    cout << "Khong du bo nho!" << endl;
+    return 1;
+}
+```
+
+**2. Luôn giải phóng bộ nhớ:**
+```cpp
+int* arr = new int[10];
+// Sử dụng arr...
+delete[] arr;  // BẮT BUỘC!
+arr = nullptr;  // Tốt nhất nên gán nullptr
+```
+
+**3. Không được truy xuất sau khi delete:**
+```cpp
+int* arr = new int[10];
+delete[] arr;
+// cout << arr[0];  // LỖI! - Undefined behavior
+```
+
+**4. Không được delete nhiều lần:**
+```cpp
+int* ptr = new int;
+delete ptr;
+// delete ptr;  // LỖI! - Double free
+ptr = nullptr;  // Gán nullptr để an toàn
+```
+
+**5. Nhớ dùng delete[] cho mảng:**
+```cpp
+int* arr = new int[10];
+delete[] arr;  // ĐÚNG - dùng delete[]
+// delete arr;  // SAI - chỉ giải phóng 1 phần tử
+```
+
+**6. Tránh memory leak:**
+```cpp
+// SAI - memory leak
+void badFunction() {
+    int* arr = new int[100];
+    // Quên delete[] arr
+}  // Bộ nhớ bị rò rỉ!
+
+// ĐÚNG
+void goodFunction() {
+    int* arr = new int[100];
+    // Sử dụng arr...
+    delete[] arr;  // Giải phóng trước khi thoát
+}
+```
+
+**7. Sử dụng smart pointer (C++11 trở lên):**
+```cpp
+#include <memory>
+
+// unique_ptr - tự động giải phóng
+unique_ptr<int[]> arr(new int[10]);
+// Không cần delete[], tự động giải phóng khi ra khỏi scope
+
+// shared_ptr - quản lý tham chiếu
+shared_ptr<int> ptr = make_shared<int>(100);
+```
+
+**Ví dụ tổng hợp:**
+```cpp
+#include <iostream>
+using namespace std;
+
+// Hàm cấp phát và khởi tạo mảng
+int* createAndInitArray(int n, int initValue = 0) {
+    int* arr = new(nothrow) int[n];
+    if (arr == nullptr) {
+        return nullptr;
+    }
+
+    for (int i = 0; i < n; i++) {
+        arr[i] = initValue;
+    }
+    return arr;
+}
+
+// Hàm tái cấp phát mảng với kích thước mới
+int* resizeArray(int* oldArr, int oldSize, int newSize) {
+    int* newArr = new(nothrow) int[newSize];
+    if (newArr == nullptr) {
+        return nullptr;
+    }
+
+    // Copy dữ liệu cũ
+    int copySize = (oldSize < newSize) ? oldSize : newSize;
+    for (int i = 0; i < copySize; i++) {
+        newArr[i] = oldArr[i];
+    }
+
+    // Khởi tạo phần mở rộng
+    for (int i = oldSize; i < newSize; i++) {
+        newArr[i] = 0;
+    }
+
+    delete[] oldArr;  // Giải phóng mảng cũ
+    return newArr;
+}
+
+int main() {
+    int n = 5;
+    int* arr = createAndInitArray(n, 10);
+
+    if (arr == nullptr) {
+        cout << "Khong du bo nho!" << endl;
+        return 1;
+    }
+
+    cout << "Mang ban dau: ";
+    for (int i = 0; i < n; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+
+    // Tăng kích thước mảng
+    int newSize = 10;
+    arr = resizeArray(arr, n, newSize);
+
+    if (arr == nullptr) {
+        cout << "Khong du bo nho de mo rong!" << endl;
+        return 1;
+    }
+
+    cout << "Mang sau khi mo rong: ";
+    for (int i = 0; i < newSize; i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+
+    // Giải phóng bộ nhớ
+    delete[] arr;
+    arr = nullptr;
+
+    return 0;
+}
+```
+
+### 3.8 Con trỏ và mảng
 
 **Quan hệ giữa con trỏ và mảng:**
 ```cpp
@@ -736,7 +1295,7 @@ cout << ptr[1][2] << endl;  // 7
 cout << *(*(ptr + 1) + 2) << endl;  // 7
 ```
 
-### 3.8 Hàm có tham số con trỏ
+### 3.9 Hàm có tham số con trỏ
 
 **Truyền con trỏ vào hàm:**
 ```cpp
