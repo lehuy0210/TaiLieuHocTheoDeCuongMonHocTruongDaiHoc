@@ -561,4 +561,1096 @@ console.log(db2.getAll()); // [{ id: 1, name: "User 1" }]
 console.log(db3.getAll()); // [{ id: 1, name: "User 1" }]
 ```
 
-Tôi sẽ tiếp tục viết phần còn lại. Bạn muốn tôi hoàn thành tất cả 4 file không?
+### 2.3 Observer Pattern - Theo Dõi Và Thông Báo
+
+**Tư duy**: Giống như đăng ký nhận tin từ báo:
+- Bạn đăng ký (subscribe) nhận tin từ báo
+- Khi có tin mới, báo gửi (notify) cho tất cả người đăng ký
+- Bạn có thể hủy đăng ký (unsubscribe) bất kỳ lúc nào
+
+**Ứng dụng thực tế**:
+- Event handling (click, submit, etc.)
+- Notification system
+- State management (Redux, MobX)
+- Real-time updates
+
+```javascript
+// Subject (Chủ thể) - Người gửi thông báo
+class NewsAgency {
+  constructor() {
+    this.subscribers = []; // Danh sách người đăng ký
+  }
+
+  // Đăng ký nhận tin
+  subscribe(observer) {
+    this.subscribers.push(observer);
+    console.log(`✓ ${observer.name} đã đăng ký nhận tin`);
+  }
+
+  // Hủy đăng ký
+  unsubscribe(observer) {
+    this.subscribers = this.subscribers.filter(sub => sub !== observer);
+    console.log(`✗ ${observer.name} đã hủy đăng ký`);
+  }
+
+  // Gửi thông báo cho tất cả subscribers
+  notify(news) {
+    console.log(`\n📰 TIN MỚI: ${news}\n`);
+    this.subscribers.forEach(subscriber => {
+      subscriber.update(news);
+    });
+  }
+}
+
+// Observer (Người quan sát) - Người nhận thông báo
+class Subscriber {
+  constructor(name) {
+    this.name = name;
+  }
+
+  // Nhận thông báo
+  update(news) {
+    console.log(`→ ${this.name} đã đọc: "${news}"`);
+  }
+}
+
+// === Sử dụng ===
+const vnexpress = new NewsAgency();
+
+const reader1 = new Subscriber("Nguyễn Văn A");
+const reader2 = new Subscriber("Trần Thị B");
+const reader3 = new Subscriber("Lê Văn C");
+
+// Đăng ký
+vnexpress.subscribe(reader1);
+vnexpress.subscribe(reader2);
+vnexpress.subscribe(reader3);
+
+// Gửi tin
+vnexpress.notify("Việt Nam vô địch SEA Games!");
+// 📰 TIN MỚI: Việt Nam vô địch SEA Games!
+// → Nguyễn Văn A đã đọc: "Việt Nam vô địch SEA Games!"
+// → Trần Thị B đã đọc: "Việt Nam vô địch SEA Games!"
+// → Lê Văn C đã đọc: "Việt Nam vô địch SEA Games!"
+
+// Hủy đăng ký
+vnexpress.unsubscribe(reader2);
+
+// Gửi tin mới
+vnexpress.notify("Giá vàng tăng cao kỷ lục");
+// 📰 TIN MỚI: Giá vàng tăng cao kỷ lục
+// → Nguyễn Văn A đã đọc: "Giá vàng tăng cao kỷ lục"
+// → Lê Văn C đã đọc: "Giá vàng tăng cao kỷ lục"
+// (Trần Thị B không nhận được vì đã hủy)
+```
+
+**📌 Bài Tập 4: Hệ Thống Thông Báo Đơn Hàng**
+
+```javascript
+// Yêu cầu: Tạo hệ thống thông báo khi có đơn hàng mới
+// 1. Class OrderSystem (Subject): subscribe(), unsubscribe(), notify()
+// 2. Class Customer (Observer): update() - nhận thông báo
+// 3. Class ShippingCompany (Observer): update() - chuẩn bị giao hàng
+// 4. Class WarehouseManager (Observer): update() - đóng gói hàng
+
+// TODO: Hoàn thành code
+```
+
+<details>
+<summary>👉 Xem Lời Giải</summary>
+
+```javascript
+class OrderSystem {
+  constructor() {
+    this.observers = [];
+  }
+
+  subscribe(observer) {
+    this.observers.push(observer);
+  }
+
+  unsubscribe(observer) {
+    this.observers = this.observers.filter(obs => obs !== observer);
+  }
+
+  // Tạo đơn hàng mới
+  createOrder(orderInfo) {
+    console.log(`\n🛒 ĐỚN HÀNG MỚI #${orderInfo.id}`);
+    console.log(`Sản phẩm: ${orderInfo.product}`);
+    console.log(`Khách hàng: ${orderInfo.customerName}\n`);
+
+    this.notify(orderInfo);
+  }
+
+  notify(orderInfo) {
+    this.observers.forEach(observer => {
+      observer.update(orderInfo);
+    });
+  }
+}
+
+class Customer {
+  constructor(name) {
+    this.name = name;
+  }
+
+  update(orderInfo) {
+    console.log(`✓ [Khách hàng ${this.name}] Đã nhận xác nhận đơn hàng #${orderInfo.id}`);
+  }
+}
+
+class ShippingCompany {
+  constructor(name) {
+    this.name = name;
+  }
+
+  update(orderInfo) {
+    console.log(`✓ [${this.name}] Chuẩn bị giao hàng đến ${orderInfo.address}`);
+  }
+}
+
+class WarehouseManager {
+  update(orderInfo) {
+    console.log(`✓ [Kho hàng] Bắt đầu đóng gói ${orderInfo.product}`);
+  }
+}
+
+// Sử dụng
+const orderSystem = new OrderSystem();
+
+const customer = new Customer("Nguyễn Văn A");
+const shipper = new ShippingCompany("Giao Hàng Nhanh");
+const warehouse = new WarehouseManager();
+
+orderSystem.subscribe(customer);
+orderSystem.subscribe(shipper);
+orderSystem.subscribe(warehouse);
+
+// Tạo đơn hàng
+orderSystem.createOrder({
+  id: "DH001",
+  product: "iPhone 15 Pro Max",
+  customerName: "Nguyễn Văn A",
+  address: "123 Nguyễn Huệ, Q1, TP.HCM"
+});
+
+// 🛒 ĐỚN HÀNG MỚI #DH001
+// Sản phẩm: iPhone 15 Pro Max
+// Khách hàng: Nguyễn Văn A
+//
+// ✓ [Khách hàng Nguyễn Văn A] Đã nhận xác nhận đơn hàng #DH001
+// ✓ [Giao Hàng Nhanh] Chuẩn bị giao hàng đến 123 Nguyễn Huệ, Q1, TP.HCM
+// ✓ [Kho hàng] Bắt đầu đóng gói iPhone 15 Pro Max
+```
+</details>
+
+### 2.4 Factory Pattern - Nhà Máy Tạo Objects
+
+**Tư duy**: Giống như nhà máy sản xuất:
+- Bạn đặt hàng "Tôi muốn xe hơi màu đỏ"
+- Nhà máy tạo ra xe hơi theo yêu cầu
+- Bạn không cần biết cách làm xe
+
+**Ứng dụng thực tế**:
+- Tạo nhiều loại objects khác nhau nhưng có interface giống nhau
+- Game development (tạo enemies, items, characters)
+- UI components (buttons, inputs, modals)
+
+```javascript
+// Các classes cơ bản
+class Laptop {
+  constructor(brand, ram, storage) {
+    this.type = "Laptop";
+    this.brand = brand;
+    this.ram = ram;
+    this.storage = storage;
+  }
+
+  getInfo() {
+    return `${this.type} ${this.brand}: RAM ${this.ram}GB, SSD ${this.storage}GB`;
+  }
+}
+
+class Phone {
+  constructor(brand, camera, battery) {
+    this.type = "Phone";
+    this.brand = brand;
+    this.camera = camera;
+    this.battery = battery;
+  }
+
+  getInfo() {
+    return `${this.type} ${this.brand}: Camera ${this.camera}MP, Pin ${this.battery}mAh`;
+  }
+}
+
+class Tablet {
+  constructor(brand, screenSize, stylus) {
+    this.type = "Tablet";
+    this.brand = brand;
+    this.screenSize = screenSize;
+    this.stylus = stylus;
+  }
+
+  getInfo() {
+    return `${this.type} ${this.brand}: Màn hình ${this.screenSize}", ${this.stylus ? 'Có' : 'Không có'} bút`;
+  }
+}
+
+// Factory - Nhà máy tạo sản phẩm
+class ElectronicsFactory {
+  createProduct(type, specs) {
+    switch(type) {
+      case "laptop":
+        return new Laptop(specs.brand, specs.ram, specs.storage);
+
+      case "phone":
+        return new Phone(specs.brand, specs.camera, specs.battery);
+
+      case "tablet":
+        return new Tablet(specs.brand, specs.screenSize, specs.stylus);
+
+      default:
+        throw new Error(`Không hỗ trợ loại sản phẩm: ${type}`);
+    }
+  }
+}
+
+// === Sử dụng ===
+const factory = new ElectronicsFactory();
+
+// Tạo laptop
+const laptop = factory.createProduct("laptop", {
+  brand: "Dell",
+  ram: 16,
+  storage: 512
+});
+console.log(laptop.getInfo());
+// Laptop Dell: RAM 16GB, SSD 512GB
+
+// Tạo phone
+const phone = factory.createProduct("phone", {
+  brand: "iPhone 15",
+  camera: 48,
+  battery: 4000
+});
+console.log(phone.getInfo());
+// Phone iPhone 15: Camera 48MP, Pin 4000mAh
+
+// Tạo tablet
+const tablet = factory.createProduct("tablet", {
+  brand: "iPad Pro",
+  screenSize: 12.9,
+  stylus: true
+});
+console.log(tablet.getInfo());
+// Tablet iPad Pro: Màn hình 12.9", Có bút
+```
+
+**💡 Lợi Ích Factory Pattern**:
+1. **Đơn giản hóa**: Không cần biết cách tạo từng loại object
+2. **Dễ mở rộng**: Thêm loại mới chỉ cần thêm vào factory
+3. **Tập trung**: Logic tạo object ở một chỗ
+
+---
+
+## 3. Lập Trình Bất Đồng Bộ & Event Loop
+
+### 🤔 Tư Duy: Tại Sao Cần Lập Trình Bất Đồng Bộ?
+
+**Ví dụ thực tế**:
+Bạn vào quán cà phê:
+- ❌ **Đồng bộ (Synchronous)**: Đứng chờ barista pha xong cà phê mới được đặt món tiếp theo → Chậm!
+- ✅ **Bất đồng bộ (Asynchronous)**: Gọi món xong, ngồi chờ, barista làm xong sẽ gọi → Hiệu quả!
+
+**Trong lập trình**:
+- Gọi API lấy dữ liệu: mất 2-3 giây
+- Nếu chờ đến khi xong mới chạy tiếp → App bị "đơ"
+- Giải pháp: Chạy tiếp code khác, khi API xong sẽ xử lý
+
+### 3.1 Callback Functions - Hàm Gọi Lại
+
+**Định nghĩa**: Callback là function được truyền vào function khác để "gọi lại" sau.
+
+```javascript
+// === Ví dụ 1: Callback đơn giản ===
+function sayHello(name, callback) {
+  console.log(`Xin chào ${name}!`);
+  callback(); // Gọi function được truyền vào
+}
+
+function sayGoodbye() {
+  console.log("Tạm biệt!");
+}
+
+sayHello("An", sayGoodbye);
+// Xin chào An!
+// Tạm biệt!
+
+// === Ví dụ 2: Callback với setTimeout ===
+console.log("1. Bắt đầu");
+
+setTimeout(function() {
+  console.log("2. Sau 2 giây");
+}, 2000);
+
+console.log("3. Kết thúc");
+
+// Output:
+// 1. Bắt đầu
+// 3. Kết thúc
+// (đợi 2 giây)
+// 2. Sau 2 giây
+```
+
+**🔍 Giải Thích**:
+1. Log "1. Bắt đầu"
+2. `setTimeout` đặt callback vào hàng đợi, chờ 2 giây
+3. Chương trình chạy tiếp, log "3. Kết thúc"
+4. Sau 2 giây, callback chạy, log "2. Sau 2 giây"
+
+**⚠️ Vấn Đề: Callback Hell (Địa ngục callback)**
+
+```javascript
+// Callback lồng nhau nhiều tầng → Khó đọc, khó maintain
+getUserData(userId, function(user) {
+  getOrders(user.id, function(orders) {
+    getOrderDetails(orders[0].id, function(details) {
+      getPaymentInfo(details.paymentId, function(payment) {
+        console.log(payment);
+        // 😱 Callback Hell!
+      });
+    });
+  });
+});
+```
+
+### 3.2 Promises - Lời Hứa
+
+**Tư duy**: Promise như "giấy hứa" trong đời sống:
+- Bạn đặt hàng online → Nhận "giấy hứa" sẽ giao hàng
+- Kết quả có thể:
+  - ✅ **Fulfilled**: Giao hàng thành công
+  - ❌ **Rejected**: Giao hàng thất bại
+  - ⏳ **Pending**: Đang trên đường giao
+
+```javascript
+// === Tạo Promise ===
+function fetchUser(userId) {
+  return new Promise((resolve, reject) => {
+    console.log(`Đang tải user ${userId}...`);
+
+    setTimeout(() => {
+      if (userId > 0) {
+        // Thành công
+        resolve({
+          id: userId,
+          name: `User ${userId}`,
+          email: `user${userId}@example.com`
+        });
+      } else {
+        // Thất bại
+        reject(new Error("User ID không hợp lệ"));
+      }
+    }, 1500);
+  });
+}
+
+// === Sử dụng Promise ===
+fetchUser(1)
+  .then(user => {
+    console.log("✓ Thành công:", user);
+    // Có thể return promise khác để chain
+    return fetchUser(2);
+  })
+  .then(user2 => {
+    console.log("✓ User 2:", user2);
+  })
+  .catch(error => {
+    console.error("✗ Lỗi:", error.message);
+  })
+  .finally(() => {
+    console.log("✓ Hoàn tất (dù thành công hay thất bại)");
+  });
+
+// Output:
+// Đang tải user 1...
+// (đợi 1.5s)
+// ✓ Thành công: {id: 1, name: "User 1", email: "user1@example.com"}
+// Đang tải user 2...
+// (đợi 1.5s)
+// ✓ User 2: {id: 2, name: "User 2", email: "user2@example.com"}
+// ✓ Hoàn tất
+```
+
+**🔑 Các Methods Quan Trọng**:
+- `.then()`: Xử lý khi thành công
+- `.catch()`: Xử lý khi lỗi
+- `.finally()`: Chạy dù thành công hay lỗi
+
+**💡 Promise.all() - Chờ Tất Cả**
+
+```javascript
+// Gọi nhiều APIs cùng lúc
+const promise1 = fetchUser(1);
+const promise2 = fetchUser(2);
+const promise3 = fetchUser(3);
+
+Promise.all([promise1, promise2, promise3])
+  .then(results => {
+    console.log("Tất cả users:", results);
+    // [user1, user2, user3]
+  })
+  .catch(error => {
+    console.error("Có ít nhất 1 lỗi:", error);
+  });
+```
+
+### 3.3 Async/Await - Cú Pháp Hiện Đại
+
+**Tư duy**: Làm code bất đồng bộ trông giống code đồng bộ → Dễ đọc!
+
+```javascript
+// === Cách cũ với Promise ===
+function getUserWithPromise(userId) {
+  fetchUser(userId)
+    .then(user => {
+      console.log("User:", user);
+      return fetchOrders(user.id);
+    })
+    .then(orders => {
+      console.log("Orders:", orders);
+    })
+    .catch(error => {
+      console.error("Lỗi:", error);
+    });
+}
+
+// === Cách mới với Async/Await ===
+async function getUserWithAsync(userId) {
+  try {
+    // 'await' chờ promise hoàn thành
+    const user = await fetchUser(userId);
+    console.log("User:", user);
+
+    const orders = await fetchOrders(user.id);
+    console.log("Orders:", orders);
+
+    return { user, orders };
+  } catch (error) {
+    console.error("Lỗi:", error);
+  }
+}
+
+// Gọi async function
+getUserWithAsync(1);
+```
+
+**🔑 Các Quy Tắc**:
+1. `async` function luôn return Promise
+2. `await` chỉ dùng được trong `async` function
+3. Dùng `try/catch` để bắt lỗi
+
+**📌 Bài Tập 5: Hệ Thống Đặt Phòng Khách Sạn**
+
+```javascript
+// Yêu cầu: Tạo hệ thống đặt phòng với các bước:
+// 1. checkAvailability(roomId) - Kiểm tra phòng trống (1s)
+// 2. createBooking(roomId, guestName) - Tạo booking (1.5s)
+// 3. processPayment(bookingId, amount) - Thanh toán (2s)
+// 4. sendConfirmation(bookingId) - Gửi xác nhận (1s)
+//
+// Dùng Async/Await để xử lý tuần tự
+
+// TODO: Hoàn thành code
+```
+
+<details>
+<summary>👉 Xem Lời Giải</summary>
+
+```javascript
+// Giả lập các functions bất đồng bộ
+function checkAvailability(roomId) {
+  return new Promise((resolve, reject) => {
+    console.log(`1️⃣ Đang kiểm tra phòng ${roomId}...`);
+    setTimeout(() => {
+      const available = Math.random() > 0.2; // 80% có phòng
+      if (available) {
+        resolve({ roomId, available: true, price: 1000000 });
+      } else {
+        reject(new Error("Phòng đã hết"));
+      }
+    }, 1000);
+  });
+}
+
+function createBooking(roomId, guestName) {
+  return new Promise((resolve) => {
+    console.log(`2️⃣ Đang tạo booking cho ${guestName}...`);
+    setTimeout(() => {
+      const bookingId = `BK${Date.now()}`;
+      resolve({ bookingId, roomId, guestName });
+    }, 1500);
+  });
+}
+
+function processPayment(bookingId, amount) {
+  return new Promise((resolve, reject) => {
+    console.log(`3️⃣ Đang xử lý thanh toán ${amount.toLocaleString('vi-VN')}đ...`);
+    setTimeout(() => {
+      const success = Math.random() > 0.1; // 90% thành công
+      if (success) {
+        resolve({ bookingId, amount, paymentId: `PAY${Date.now()}` });
+      } else {
+        reject(new Error("Thanh toán thất bại"));
+      }
+    }, 2000);
+  });
+}
+
+function sendConfirmation(bookingId) {
+  return new Promise((resolve) => {
+    console.log(`4️⃣ Đang gửi email xác nhận...`);
+    setTimeout(() => {
+      resolve({ bookingId, confirmed: true });
+    }, 1000);
+  });
+}
+
+// === Hàm chính - Đặt phòng ===
+async function bookRoom(roomId, guestName) {
+  console.log(`\n🏨 BẮT ĐẦU ĐẶT PHÒNG\n`);
+
+  try {
+    // Bước 1: Kiểm tra phòng trống
+    const room = await checkAvailability(roomId);
+    console.log(`✓ Phòng ${roomId} còn trống, giá ${room.price.toLocaleString('vi-VN')}đ\n`);
+
+    // Bước 2: Tạo booking
+    const booking = await createBooking(roomId, guestName);
+    console.log(`✓ Đã tạo booking ${booking.bookingId}\n`);
+
+    // Bước 3: Thanh toán
+    const payment = await processPayment(booking.bookingId, room.price);
+    console.log(`✓ Thanh toán thành công, mã ${payment.paymentId}\n`);
+
+    // Bước 4: Gửi xác nhận
+    const confirmation = await sendConfirmation(booking.bookingId);
+    console.log(`✓ Đã gửi email xác nhận\n`);
+
+    console.log(`🎉 ĐẶT PHÒNG THÀNH CÔNG!\n`);
+    return {
+      success: true,
+      booking,
+      payment,
+      confirmation
+    };
+
+  } catch (error) {
+    console.error(`\n❌ ĐẶT PHÒNG THẤT BẠI: ${error.message}\n`);
+    return { success: false, error: error.message };
+  }
+}
+
+// Sử dụng
+bookRoom(101, "Nguyễn Văn A");
+```
+</details>
+
+### 3.4 Event Loop - Vòng Lặp Sự Kiện
+
+**Tư duy**: Event Loop như một "thư ký" giúp JavaScript xử lý nhiều việc cùng lúc:
+
+```
+┌────────────────────────────┐
+│      CALL STACK            │  ← Chạy code JavaScript
+│   (Ngăn xếp gọi hàm)       │
+└────────────────────────────┘
+            ↓
+┌────────────────────────────┐
+│      WEB APIs              │  ← setTimeout, fetch, DOM
+│   (Xử lý bất đồng bộ)      │
+└────────────────────────────┘
+            ↓
+┌────────────────────────────┐
+│   CALLBACK QUEUE           │  ← Hàng đợi callbacks
+│   [callback1, callback2]   │
+└────────────────────────────┘
+            ↓
+      EVENT LOOP ←──────────┘  ← Kiểm tra & đưa vào Call Stack
+```
+
+**Ví dụ minh họa**:
+
+```javascript
+console.log("1. Start");
+
+setTimeout(() => {
+  console.log("2. Timeout");
+}, 0); // 0 giây vẫn phải chờ!
+
+Promise.resolve().then(() => {
+  console.log("3. Promise");
+});
+
+console.log("4. End");
+
+// Output:
+// 1. Start
+// 4. End
+// 3. Promise
+// 2. Timeout
+
+// Giải thích:
+// - "1. Start" và "4. End": Code đồng bộ, chạy ngay
+// - "3. Promise": Microtask, ưu tiên cao hơn
+// - "2. Timeout": Macrotask, ưu tiên thấp nhất
+```
+
+**🔑 Hai Loại Task**:
+1. **Microtasks** (ưu tiên cao): Promises, queueMicrotask
+2. **Macrotasks** (ưu tiên thấp): setTimeout, setInterval, I/O
+
+---
+
+## 4. JavaScript Modules
+
+### 🤔 Tư Duy: Tại Sao Cần Modules?
+
+**Vấn đề**: File JavaScript dài 5000 dòng → Khó đọc, khó maintain, khó tái sử dụng
+
+**Giải pháp**: Chia nhỏ thành nhiều modules (files nhỏ), mỗi module làm 1 việc cụ thể
+
+**Lợi ích**:
+- ✅ Tổ chức code tốt hơn
+- ✅ Tái sử dụng dễ dàng
+- ✅ Tránh xung đột tên biến
+- ✅ Dễ test từng phần
+
+### 4.1 ES6 Modules (ESM) - Chuẩn Hiện Đại
+
+**Export - Xuất Ra**
+
+```javascript
+// === math.js - Named Exports ===
+export const PI = 3.14159;
+
+export function add(a, b) {
+  return a + b;
+}
+
+export function subtract(a, b) {
+  return a - b;
+}
+
+export function multiply(a, b) {
+  return a * b;
+}
+
+// Hoặc export một lần ở cuối
+const divide = (a, b) => a / b;
+const power = (a, b) => Math.pow(a, b);
+
+export { divide, power };
+
+// === user.js - Default Export ===
+export default class User {
+  constructor(name, email) {
+    this.name = name;
+    this.email = email;
+  }
+
+  getInfo() {
+    return `${this.name} - ${this.email}`;
+  }
+}
+
+// Có thể có cả default và named exports
+export const USER_ROLES = {
+  ADMIN: 'admin',
+  USER: 'user',
+  GUEST: 'guest'
+};
+```
+
+**Import - Nhập Vào**
+
+```javascript
+// === app.js ===
+
+// Import named exports
+import { add, subtract, PI } from './math.js';
+
+console.log(add(5, 3));      // 8
+console.log(subtract(10, 4)); // 6
+console.log(PI);             // 3.14159
+
+// Import với alias (đổi tên)
+import { add as sum, multiply as times } from './math.js';
+console.log(sum(2, 3));      // 5
+console.log(times(4, 5));    // 20
+
+// Import tất cả
+import * as MathUtils from './math.js';
+console.log(MathUtils.add(1, 2));     // 3
+console.log(MathUtils.multiply(3, 4)); // 12
+
+// Import default export
+import User from './user.js';
+const user1 = new User("An", "an@example.com");
+console.log(user1.getInfo()); // An - an@example.com
+
+// Import cả default và named
+import User, { USER_ROLES } from './user.js';
+console.log(USER_ROLES.ADMIN); // 'admin'
+```
+
+### 4.2 Ví Dụ Thực Tế: Ứng Dụng Todo
+
+**Cấu trúc thư mục**:
+```
+todo-app/
+├── index.html
+├── src/
+│   ├── models/
+│   │   └── Todo.js
+│   ├── services/
+│   │   └── TodoService.js
+│   ├── utils/
+│   │   └── helpers.js
+│   └── app.js
+```
+
+**1. Model - Todo.js**
+
+```javascript
+// models/Todo.js
+export default class Todo {
+  constructor(id, title, completed = false) {
+    this.id = id;
+    this.title = title;
+    this.completed = completed;
+    this.createdAt = new Date();
+  }
+
+  toggle() {
+    this.completed = !this.completed;
+  }
+
+  updateTitle(newTitle) {
+    if (newTitle.trim()) {
+      this.title = newTitle;
+    }
+  }
+
+  getAge() {
+    const now = new Date();
+    const diff = now - this.createdAt;
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 1) return "Vừa xong";
+    if (minutes < 60) return `${minutes} phút trước`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours} giờ trước`;
+  }
+}
+```
+
+**2. Service - TodoService.js**
+
+```javascript
+// services/TodoService.js
+import Todo from '../models/Todo.js';
+
+class TodoService {
+  constructor() {
+    this.todos = [];
+    this.nextId = 1;
+  }
+
+  // Thêm todo mới
+  addTodo(title) {
+    if (!title.trim()) {
+      throw new Error("Tiêu đề không được để trống");
+    }
+
+    const todo = new Todo(this.nextId++, title);
+    this.todos.push(todo);
+    console.log(`✓ Đã thêm: "${title}"`);
+    return todo;
+  }
+
+  // Xóa todo
+  removeTodo(id) {
+    const index = this.todos.findIndex(todo => todo.id === id);
+    if (index !== -1) {
+      const removed = this.todos.splice(index, 1)[0];
+      console.log(`✓ Đã xóa: "${removed.title}"`);
+      return true;
+    }
+    return false;
+  }
+
+  // Đánh dấu hoàn thành/chưa hoàn thành
+  toggleTodo(id) {
+    const todo = this.todos.find(t => t.id === id);
+    if (todo) {
+      todo.toggle();
+      console.log(`✓ ${todo.title}: ${todo.completed ? 'Hoàn thành' : 'Chưa hoàn thành'}`);
+      return true;
+    }
+    return false;
+  }
+
+  // Lấy tất cả todos
+  getAllTodos() {
+    return [...this.todos]; // Return copy
+  }
+
+  // Lấy todos chưa hoàn thành
+  getActiveTodos() {
+    return this.todos.filter(todo => !todo.completed);
+  }
+
+  // Lấy todos đã hoàn thành
+  getCompletedTodos() {
+    return this.todos.filter(todo => todo.completed);
+  }
+
+  // Thống kê
+  getStats() {
+    return {
+      total: this.todos.length,
+      active: this.getActiveTodos().length,
+      completed: this.getCompletedTodos().length
+    };
+  }
+}
+
+// Export singleton instance
+export default new TodoService();
+```
+
+**3. Utilities - helpers.js**
+
+```javascript
+// utils/helpers.js
+
+// Format ngày giờ
+export function formatDate(date) {
+  return date.toLocaleDateString('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// Tạo ID ngẫu nhiên
+export function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Validate input
+export function validateTodoTitle(title) {
+  if (!title || typeof title !== 'string') {
+    return { valid: false, error: "Tiêu đề phải là chuỗi" };
+  }
+
+  const trimmed = title.trim();
+  if (trimmed.length === 0) {
+    return { valid: false, error: "Tiêu đề không được để trống" };
+  }
+
+  if (trimmed.length > 100) {
+    return { valid: false, error: "Tiêu đề không được quá 100 ký tự" };
+  }
+
+  return { valid: true, value: trimmed };
+}
+
+// Constants
+export const CONSTANTS = {
+  MAX_TITLE_LENGTH: 100,
+  STORAGE_KEY: 'todos_app',
+  COLORS: {
+    ACTIVE: '#007bff',
+    COMPLETED: '#28a745'
+  }
+};
+```
+
+**4. Main App - app.js**
+
+```javascript
+// app.js
+import todoService from './services/TodoService.js';
+import { formatDate, validateTodoTitle, CONSTANTS } from './utils/helpers.js';
+
+class TodoApp {
+  constructor() {
+    this.service = todoService;
+    this.init();
+  }
+
+  init() {
+    console.log("📝 TODO APP STARTED\n");
+    this.demo();
+  }
+
+  demo() {
+    // Thêm todos
+    console.log("=== THÊM TODOS ===");
+    this.service.addTodo("Học JavaScript Modules");
+    this.service.addTodo("Làm bài tập ES6");
+    this.service.addTodo("Ôn thi cuối kỳ");
+    this.service.addTodo("Đi chơi");
+
+    // Hiển thị
+    console.log("\n=== DANH SÁCH ===");
+    this.displayTodos();
+
+    // Đánh dấu hoàn thành
+    console.log("\n=== ĐÁNH DẤU HOÀN THÀNH ===");
+    this.service.toggleTodo(1);
+    this.service.toggleTodo(2);
+
+    // Hiển thị lại
+    console.log("\n=== SAU KHI CẬP NHẬT ===");
+    this.displayTodos();
+
+    // Thống kê
+    console.log("\n=== THỐNG KÊ ===");
+    this.displayStats();
+
+    // Xóa
+    console.log("\n=== XÓA TODO ===");
+    this.service.removeTodo(4);
+    this.displayTodos();
+  }
+
+  displayTodos() {
+    const todos = this.service.getAllTodos();
+
+    if (todos.length === 0) {
+      console.log("(Chưa có todo nào)");
+      return;
+    }
+
+    todos.forEach(todo => {
+      const status = todo.completed ? "✅" : "⬜";
+      const age = todo.getAge();
+      console.log(`${status} [${todo.id}] ${todo.title} (${age})`);
+    });
+  }
+
+  displayStats() {
+    const stats = this.service.getStats();
+    console.log(`📊 Tổng: ${stats.total}`);
+    console.log(`⬜ Đang làm: ${stats.active}`);
+    console.log(`✅ Hoàn thành: ${stats.completed}`);
+
+    if (stats.total > 0) {
+      const percent = ((stats.completed / stats.total) * 100).toFixed(1);
+      console.log(`📈 Tiến độ: ${percent}%`);
+    }
+  }
+}
+
+// Khởi chạy app
+new TodoApp();
+```
+
+**Chạy trong HTML**:
+
+```html
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo App</title>
+</head>
+<body>
+  <h1>Todo App</h1>
+  <p>Mở Console để xem kết quả</p>
+
+  <!-- Import module với type="module" -->
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
+```
+
+**💡 Lưu Ý Quan Trọng**:
+- Phải có `type="module"` trong thẻ `<script>`
+- Modules chạy trong strict mode tự động
+- Không thể dùng `import/export` ngoài modules
+- Cần web server (không chạy được bằng file://)
+
+---
+
+## 📚 Tổng Kết Part 1
+
+### ✅ Kiến Thức Đã Học
+
+**1. Prototype & Prototype Chain**
+- Prototype là "mẫu" để objects khác kế thừa
+- Prototype Chain: chuỗi kế thừa nhiều tầng
+- Constructor functions & ES6 Classes
+
+**2. JavaScript Patterns**
+- Module Pattern: Tạo private/public members
+- Singleton Pattern: Chỉ 1 instance duy nhất
+- Observer Pattern: Theo dõi và thông báo
+- Factory Pattern: Tạo objects linh hoạt
+
+**3. Asynchronous JavaScript**
+- Callbacks: Hàm gọi lại (callback hell!)
+- Promises: Lời hứa với then/catch
+- Async/Await: Cú pháp đẹp, dễ đọc
+- Event Loop: Xử lý bất đồng bộ
+
+**4. JavaScript Modules**
+- ES6 Modules: import/export
+- Tổ chức code thành files nhỏ
+- Tái sử dụng và maintain dễ dàng
+
+### 📝 Checklist Ôn Tập
+
+- [ ] Giải thích được Prototype là gì
+- [ ] Phân biệt Constructor Function vs Class
+- [ ] Tạo được Module với private/public members
+- [ ] Hiểu và dùng được Promise
+- [ ] Viết được async/await
+- [ ] Tổ chức code thành modules
+
+### 🎯 Bài Tập Tổng Hợp
+
+**Tạo Ứng Dụng Quản Lý Sinh Viên**
+
+Yêu cầu:
+1. Dùng ES6 Classes (Person, Student)
+2. Tạo Module Pattern cho StudentManager
+3. Dùng Async/Await để "giả lập" lưu database
+4. Tổ chức thành modules riêng
+
+Hints:
+- `models/Student.js`: Class Student
+- `services/StudentService.js`: Quản lý students
+- `utils/validators.js`: Validate dữ liệu
+- `app.js`: Main application
+
+### 💡 Tips Học Tốt
+
+1. **Thực hành mỗi ngày**: Code 30-60 phút/ngày
+2. **Làm bài tập**: Tự tạo mini projects
+3. **Debug thường xuyên**: Dùng `console.log`, DevTools
+4. **Đọc code người khác**: Học từ GitHub
+5. **Hỏi khi không hiểu**: Google, Stack Overflow, ChatGPT
+
+---
+
+**🎉 Chúc bạn học tốt JavaScript Nâng Cao! 🚀**
+
+*Hãy chuyển sang Part 2 để học tiếp về JavaScript Engine, Error Handling, và Memory Management!*
